@@ -10,7 +10,7 @@ export const Route = createFileRoute("/result/$id")({
   component: ResultPage,
 });
 
-type Record = {
+type AnalysisRecord = {
   id: string;
   job_title: string;
   department: string | null;
@@ -22,7 +22,7 @@ type Record = {
 
 function ResultPage() {
   const { id } = Route.useParams();
-  const [record, setRecord] = useState<Record | null>(null);
+  const [record, setRecord] = useState<AnalysisRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ function ResultPage() {
         setLoading(false);
         return;
       }
-      setRecord(data as Record | null);
+      setRecord(data as AnalysisRecord | null);
       setLoading(false);
 
       if (data && (data.status === "completed" || data.status === "error") && timer) {
