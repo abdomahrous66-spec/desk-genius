@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      job_analyses: {
+        Row: {
+          analysis_result: string | null
+          created_at: string
+          department: string | null
+          id: string
+          job_title: string
+          manager_name: string | null
+          raw_input: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_result?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          job_title: string
+          manager_name?: string | null
+          raw_input: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_result?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          job_title?: string
+          manager_name?: string | null
+          raw_input?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
