@@ -16,10 +16,12 @@ export type Database = {
     Tables: {
       job_analyses: {
         Row: {
+          admin_notified: boolean
           analysis_result: string | null
           created_at: string
           department: string | null
           id: string
+          jd_data: Json | null
           job_title: string
           manager_name: string | null
           raw_input: Json
@@ -27,10 +29,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_notified?: boolean
           analysis_result?: string | null
           created_at?: string
           department?: string | null
           id?: string
+          jd_data?: Json | null
           job_title: string
           manager_name?: string | null
           raw_input: Json
@@ -38,10 +42,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_notified?: boolean
           analysis_result?: string | null
           created_at?: string
           department?: string | null
           id?: string
+          jd_data?: Json | null
           job_title?: string
           manager_name?: string | null
           raw_input?: Json

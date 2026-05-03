@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowRight, Copy, Download, Sparkles, AlertCircle } from "lucide-react";
+import { Loader2, ArrowRight, Copy, Download, FileText, Sparkles, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { generateJDDocx, type JDData } from "@/lib/generate-jd-docx";
 
 export const Route = createFileRoute("/result/$id")({
   component: ResultPage,
@@ -17,6 +18,7 @@ type AnalysisRecord = {
   manager_name: string | null;
   status: string;
   analysis_result: string | null;
+  jd_data: JDData | null;
   created_at: string;
 };
 
@@ -75,6 +77,20 @@ function ResultPage() {
     a.download = `job-analysis-${record.job_title.replace(/\s+/g, "-")}.md`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const downloadJD = async () => {
+    if (!record?.jd_data) {
+      toast.error("بيانات الـ Job Description لسه مش جاهزة");
+      return;
+    }
+    try {
+      await generateJDDocx(record.jd_data);
+      toast.success("تم تحميل ملف الـ Job Description");
+    } catch (e) {
+      console.error(e);
+      toast.error("حصلت مشكلة في توليد الملف");
+    }
   };
 
   if (loading) {
@@ -156,11 +172,15 @@ function ResultPage() {
             <div className="flex flex-wrap gap-2 mb-4 justify-end">
               <Button onClick={copy} variant="outline" size="sm">
                 <Copy className="w-4 h-4 ml-1.5" />
-                نسخ
+                نسخ التحليل
               </Button>
-              <Button onClick={download} size="sm" className="bg-primary text-primary-foreground">
+              <Button onClick={download} variant="outline" size="sm">
                 <Download className="w-4 h-4 ml-1.5" />
-                تحميل (Markdown)
+                تحميل التحليل (MD)
+              </Button>
+              <Button onClick={downloadJD} size="sm" className="bg-primary text-primary-foreground" disabled={!record.jd_data}>
+                <FileText className="w-4 h-4 ml-1.5" />
+                تحميل Job Description (Word)
               </Button>
             </div>
 

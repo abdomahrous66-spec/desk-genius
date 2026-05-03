@@ -29,46 +29,119 @@ serve(async (req) => {
 
     const input = record.raw_input as Record<string, string>;
 
-    const userPrompt = `You are an expert HR consultant specializing in Job Analysis. The manager has provided the following information about a position (some fields may be empty or partial — use your expertise to fill gaps reasonably based on industry standards and the context provided):
+    const jdSchema = {
+      type: "object",
+      properties: {
+        position_title: { type: "string" },
+        sector: { type: "string" },
+        reporting_to: { type: "string" },
+        department: { type: "string" },
+        location: { type: "string" },
+        no_of_direct_reports: { type: "string" },
+        last_update: { type: "string" },
+        no_of_total_subordinate: { type: "string" },
+        version_number: { type: "string" },
+        type_of_employment: { type: "string" },
+        main_job_purpose: { type: "string" },
+        key_result_areas: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              area: { type: "string" },
+              responsibilities: { type: "array", items: { type: "string" } },
+              kras: { type: "array", items: { type: "string" } },
+            },
+            required: ["area", "responsibilities", "kras"],
+            additionalProperties: false,
+          },
+        },
+        internal_communication: { type: "array", items: { type: "string" } },
+        external_communication: { type: "array", items: { type: "string" } },
+        work_environment: {
+          type: "object",
+          properties: {
+            indoor: { type: "string" },
+            outdoor: { type: "string" },
+            working_hazards: { type: "string" },
+            working_days: { type: "string" },
+            days_off: { type: "string" },
+            working_hours: { type: "string" },
+          },
+          required: ["indoor", "outdoor", "working_hazards", "working_days", "days_off", "working_hours"],
+          additionalProperties: false,
+        },
+        reports: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              report_name: { type: "string" },
+              frequency: { type: "string" },
+              report_purpose: { type: "string" },
+              presented_to: { type: "string" },
+            },
+            required: ["report_name", "frequency", "report_purpose", "presented_to"],
+            additionalProperties: false,
+          },
+        },
+        position_dimensions: {
+          type: "object",
+          properties: {
+            level_of_authority: { type: "array", items: { type: "string" } },
+            financial_control: { type: "array", items: { type: "string" } },
+            annual_amount: { type: "array", items: { type: "string" } },
+            hiring_promotion_authority: { type: "array", items: { type: "string" } },
+          },
+          required: ["level_of_authority", "financial_control", "annual_amount", "hiring_promotion_authority"],
+          additionalProperties: false,
+        },
+        qualifications: {
+          type: "object",
+          properties: {
+            education: { type: "array", items: { type: "string" } },
+            experience: { type: "array", items: { type: "string" } },
+            computer_skills: { type: "array", items: { type: "string" } },
+            language_skills: { type: "array", items: { type: "string" } },
+            competency: { type: "array", items: { type: "string" } },
+          },
+          required: ["education", "experience", "computer_skills", "language_skills", "competency"],
+          additionalProperties: false,
+        },
+      },
+      required: [
+        "position_title", "sector", "reporting_to", "department", "location",
+        "no_of_direct_reports", "last_update", "no_of_total_subordinate",
+        "version_number", "type_of_employment", "main_job_purpose",
+        "key_result_areas", "internal_communication", "external_communication",
+        "work_environment", "reports", "position_dimensions", "qualifications",
+      ],
+      additionalProperties: false,
+    };
 
-Job Title: ${record.job_title}
-Department: ${record.department || "Not specified"}
-Manager Name: ${record.manager_name || "Not specified"}
+    const today = new Date().toISOString().slice(0, 10);
 
-Job Purpose / Summary: ${input.purpose || "(not provided — infer from job title)"}
+    const userPrompt = `You are an expert HR consultant. The manager submitted partial information about a job. Use your professional expertise to fill all gaps with reasonable, industry-standard content. Produce BOTH a Job Analysis (markdown) AND a structured Job Description matching the company template.
 
-Key Tasks & Activities: ${input.tasks || "(not provided — infer typical tasks for this role)"}
+Manager input:
+- Job Title: ${record.job_title}
+- Department: ${record.department || "(infer)"}
+- Manager Name: ${record.manager_name || "(not provided)"}
+- Purpose: ${input.purpose || "(infer)"}
+- Tasks: ${input.tasks || "(infer)"}
+- Responsibilities: ${input.responsibilities || "(infer)"}
+- Skills: ${input.skills || "(infer)"}
+- Qualifications: ${input.qualifications || "(infer)"}
+- Working Conditions: ${input.workingConditions || "(infer)"}
+- Reports To: ${input.reportsTo || "(infer)"}
+- KPIs: ${input.kpis || "(infer)"}
+- Notes: ${input.notes || "None"}
 
-Responsibilities: ${input.responsibilities || "(not provided — infer)"}
+Today's date: ${today}
 
-Required Skills: ${input.skills || "(not provided — infer)"}
-
-Required Qualifications & Experience: ${input.qualifications || "(not provided — infer)"}
-
-Working Conditions: ${input.workingConditions || "(not provided — infer)"}
-
-Reports To: ${input.reportsTo || "(not provided)"}
-
-Performance Indicators (KPIs): ${input.kpis || "(not provided — suggest appropriate KPIs)"}
-
-Additional Notes from Manager: ${input.notes || "None"}
-
-Produce a complete, professional Job Analysis document in ENGLISH with the following sections (use clear markdown headings):
-
-# Job Analysis: ${record.job_title}
-
-## 1. Job Identification
-## 2. Job Purpose / Summary
-## 3. Key Duties and Responsibilities
-## 4. Essential Tasks (detailed list)
-## 5. Required Knowledge, Skills, and Abilities (KSAs)
-## 6. Qualifications and Experience
-## 7. Physical & Working Conditions
-## 8. Reporting Relationships
-## 9. Key Performance Indicators (KPIs)
-## 10. Competency Framework
-
-Where the manager left blanks, use your professional judgment to suggest reasonable content based on the job title and context. Mark inferred items clearly with "(suggested)". Be thorough, structured, and practical.`;
+You MUST call the tool "save_job_outputs" exactly once with:
+1) "analysis_markdown": A complete English Job Analysis in markdown with sections: Job Identification, Job Purpose, Key Duties, Essential Tasks, KSAs, Qualifications, Working Conditions, Reporting Relationships, KPIs, Competency Framework.
+2) "jd": A fully populated Job Description object matching the schema. Be thorough — include 5–8 Key Result Areas (each with 4–8 responsibilities and 3–6 KRAs), 4–8 reports, realistic work environment values, and complete qualifications. Use today's date for last_update. Default version_number to "1.0". Default type_of_employment to "Full-Time" unless otherwise indicated.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -77,37 +150,66 @@ Where the manager left blanks, use your professional judgment to suggest reasona
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
-          { role: "system", content: "You are an expert HR consultant who creates detailed, professional Job Analysis documents. Always respond in English with well-structured markdown." },
+          { role: "system", content: "You are an expert HR consultant. Always call the provided tool with thorough, professional English content." },
           { role: "user", content: userPrompt },
         ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "save_job_outputs",
+              description: "Save the Job Analysis markdown and structured Job Description.",
+              parameters: {
+                type: "object",
+                properties: {
+                  analysis_markdown: { type: "string" },
+                  jd: jdSchema,
+                },
+                required: ["analysis_markdown", "jd"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "save_job_outputs" } },
       }),
     });
 
     if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        await supabase.from("job_analyses").update({ status: "error", analysis_result: "Rate limit exceeded. Please try again later." }).eq("id", analysisId);
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      if (aiResponse.status === 402) {
-        await supabase.from("job_analyses").update({ status: "error", analysis_result: "AI credits exhausted." }).eq("id", analysisId);
-        return new Response(JSON.stringify({ error: "Payment required" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
       const t = await aiResponse.text();
       console.error("AI gateway error:", aiResponse.status, t);
-      throw new Error("AI gateway error");
+      const status = aiResponse.status;
+      const msg = status === 429 ? "Rate limit exceeded" : status === 402 ? "AI credits exhausted" : "AI gateway error";
+      await supabase.from("job_analyses").update({ status: "error", analysis_result: msg }).eq("id", analysisId);
+      return new Response(JSON.stringify({ error: msg }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const aiData = await aiResponse.json();
-    const result = aiData.choices?.[0]?.message?.content || "No analysis generated.";
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall) throw new Error("AI did not return tool call");
+
+    const args = JSON.parse(toolCall.function.arguments);
+    const analysisMarkdown: string = args.analysis_markdown;
+    const jd = args.jd;
 
     await supabase
       .from("job_analyses")
-      .update({ analysis_result: result, status: "completed", updated_at: new Date().toISOString() })
+      .update({
+        analysis_result: analysisMarkdown,
+        jd_data: jd,
+        status: "completed",
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", analysisId);
 
-    return new Response(JSON.stringify({ success: true, result }), {
+    // Notify admin (fire and forget)
+    if (!record.admin_notified) {
+      supabase.functions.invoke("notify-admin", { body: { analysisId } }).catch((e) => console.error("notify-admin error:", e));
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
