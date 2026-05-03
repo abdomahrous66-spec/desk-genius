@@ -85,6 +85,20 @@ serve(async (req) => {
             additionalProperties: false,
           },
         },
+        reporting_structure: { type: "string" },
+        kpis: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              kpi: { type: "string" },
+              measurement: { type: "string" },
+              target: { type: "string" },
+            },
+            required: ["kpi", "measurement", "target"],
+            additionalProperties: false,
+          },
+        },
         position_dimensions: {
           type: "object",
           properties: {
@@ -115,6 +129,7 @@ serve(async (req) => {
         "version_number", "type_of_employment", "main_job_purpose",
         "key_result_areas", "internal_communication", "external_communication",
         "work_environment", "reports", "position_dimensions", "qualifications",
+        "reporting_structure", "kpis",
       ],
       additionalProperties: false,
     };
@@ -125,21 +140,23 @@ serve(async (req) => {
 
 Manager input:
 - Job Title: ${record.job_title}
+- Sector: ${input.sector || "(infer)"}
 - Department: ${record.department || "(infer)"}
 - Manager Name: ${record.manager_name || "(not provided)"}
 - Purpose: ${input.purpose || "(infer)"}
 - Tasks & Responsibilities (combined - split intelligently into Responsibilities and KRAs): ${input.tasks || input.responsibilities || "(infer)"}
 - Qualifications (combined - extract Education, Experience, Computer Skills, Language Skills): ${input.qualifications || "(infer)"}
-- Working Conditions: ${input.workingConditions || "(infer)"}
+- Working Conditions + Internal/External Communication (extract internal stakeholders/departments AND external parties separately): ${input.workingConditions || "(infer)"}
 - Reports To: ${input.reportsTo || "(infer)"}
-- KPIs: ${input.kpis || "(infer)"}
+- Reporting Structure (Position Reporting Line - manager wrote this manually, USE AS-IS, do not invent): ${input.structure || "(leave empty string if not provided)"}
+- KPIs (manager-provided. If empty, return empty array []. DO NOT invent KPIs): ${input.kpis || "(EMPTY - return [])"}
 - Notes: ${input.notes || "None"}
 
 Today's date: ${today}
 
 You MUST call the tool "save_job_outputs" exactly once with:
 1) "analysis_markdown": A complete English Job Analysis in markdown with sections: Job Identification, Job Purpose, Key Duties, Essential Tasks, KSAs, Qualifications, Working Conditions, Reporting Relationships, KPIs, Competency Framework.
-2) "jd": A fully populated Job Description object matching the schema. Be thorough — include 5–8 Key Result Areas (each with 4–8 responsibilities and 3–6 KRAs), 4–8 reports, realistic work environment values, and complete qualifications. Use today's date for last_update. Default version_number to "1.0". Default type_of_employment to "Full-Time" unless otherwise indicated.`;
+2) "jd": A fully populated Job Description object matching the schema. Be thorough — include 5–8 Key Result Areas (each with 4–8 responsibilities and 3–6 KRAs), 4–8 reports, realistic work environment values, and complete qualifications. From the Working Conditions input, intelligently SEPARATE internal_communication (departments inside the company) from external_communication (clients, suppliers, government, partners). For "reporting_structure": use exactly what the manager provided as-is (preserve arrows/format); if empty, return empty string "". For "kpis": ONLY include items if the manager provided KPIs; otherwise return empty array []. Use today's date for last_update. Default version_number to "1.0". Default type_of_employment to "Full-Time" unless otherwise indicated.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
