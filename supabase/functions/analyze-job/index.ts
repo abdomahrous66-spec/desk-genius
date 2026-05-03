@@ -128,10 +128,8 @@ Manager input:
 - Department: ${record.department || "(infer)"}
 - Manager Name: ${record.manager_name || "(not provided)"}
 - Purpose: ${input.purpose || "(infer)"}
-- Tasks: ${input.tasks || "(infer)"}
-- Responsibilities: ${input.responsibilities || "(infer)"}
-- Skills: ${input.skills || "(infer)"}
-- Qualifications: ${input.qualifications || "(infer)"}
+- Tasks & Responsibilities (combined - split intelligently into Responsibilities and KRAs): ${input.tasks || input.responsibilities || "(infer)"}
+- Qualifications (combined - extract Education, Experience, Computer Skills, Language Skills): ${input.qualifications || "(infer)"}
 - Working Conditions: ${input.workingConditions || "(infer)"}
 - Reports To: ${input.reportsTo || "(infer)"}
 - KPIs: ${input.kpis || "(infer)"}
