@@ -79,6 +79,20 @@ function ResultPage() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadJD = async () => {
+    if (!record?.jd_data) {
+      toast.error("بيانات الـ Job Description لسه مش جاهزة");
+      return;
+    }
+    try {
+      await generateJDDocx(record.jd_data);
+      toast.success("تم تحميل ملف الـ Job Description");
+    } catch (e) {
+      console.error(e);
+      toast.error("حصلت مشكلة في توليد الملف");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
