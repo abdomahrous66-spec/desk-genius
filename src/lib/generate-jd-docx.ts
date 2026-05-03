@@ -140,6 +140,33 @@ export async function generateJDDocx(data: JDData) {
   children.push(new Table({ width: { size: TOTAL, type: WidthType.DXA }, columnWidths: [TOTAL], rows: kraRows }));
   children.push(new Paragraph({ text: "" }));
 
+  // KPIs (only if manager provided)
+  if (data.kpis && data.kpis.length > 0) {
+    const kpiColW = [4680, 2340, 2340];
+    children.push(new Table({
+      width: { size: TOTAL, type: WidthType.DXA },
+      columnWidths: kpiColW,
+      rows: [
+        sectionHeader("Key Performance Indicators (KPIs)", 3, TOTAL),
+        new TableRow({
+          children: [
+            cell("KPI", { bold: true, fill: SUB_FILL, width: kpiColW[0] }),
+            cell("Measurement", { bold: true, fill: SUB_FILL, width: kpiColW[1] }),
+            cell("Target", { bold: true, fill: SUB_FILL, width: kpiColW[2] }),
+          ],
+        }),
+        ...data.kpis.map(k => new TableRow({
+          children: [
+            cell(k.kpi, { width: kpiColW[0] }),
+            cell(k.measurement, { width: kpiColW[1] }),
+            cell(k.target, { width: kpiColW[2] }),
+          ],
+        })),
+      ],
+    }));
+    children.push(new Paragraph({ text: "" }));
+  }
+
   // Position Relationship
   children.push(new Table({
     width: { size: TOTAL, type: WidthType.DXA },
@@ -154,7 +181,24 @@ export async function generateJDDocx(data: JDData) {
   }));
   children.push(new Paragraph({ text: "" }));
 
-  // Work Environment
+  // Position Reporting Line (Structure) — only if provided
+  if (data.reporting_structure && data.reporting_structure.trim()) {
+    const structureLines = data.reporting_structure.split("\n").map(l => l.trim()).filter(Boolean);
+    children.push(new Table({
+      width: { size: TOTAL, type: WidthType.DXA },
+      columnWidths: [TOTAL],
+      rows: [
+        sectionHeader("Position Reporting Line (Structure)", 1, TOTAL),
+        new TableRow({
+          children: [cell(
+            structureLines.map(l => new Paragraph({ children: [txt(l)], spacing: { after: 60 } })),
+            { width: TOTAL }
+          )],
+        }),
+      ],
+    }));
+    children.push(new Paragraph({ text: "" }));
+  }
   const we = data.work_environment;
   const weRows = [
     ["Indoor", we.indoor], ["Outdoor", we.outdoor], ["Working Hazards", we.working_hazards],
