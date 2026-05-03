@@ -172,11 +172,15 @@ function ResultPage() {
             <div className="flex flex-wrap gap-2 mb-4 justify-end">
               <Button onClick={copy} variant="outline" size="sm">
                 <Copy className="w-4 h-4 ml-1.5" />
-                نسخ
+                نسخ التحليل
               </Button>
-              <Button onClick={download} size="sm" className="bg-primary text-primary-foreground">
+              <Button onClick={download} variant="outline" size="sm">
                 <Download className="w-4 h-4 ml-1.5" />
-                تحميل (Markdown)
+                تحميل التحليل (MD)
+              </Button>
+              <Button onClick={downloadJD} size="sm" className="bg-primary text-primary-foreground" disabled={!record.jd_data}>
+                <FileText className="w-4 h-4 ml-1.5" />
+                تحميل Job Description (Word)
               </Button>
             </div>
 
