@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, ArrowRight, Copy, Download, Sparkles, AlertCircle } from "lucide-react";
+import { Loader2, ArrowRight, Copy, Download, FileText, Sparkles, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { generateJDDocx, type JDData } from "@/lib/generate-jd-docx";
 
 export const Route = createFileRoute("/result/$id")({
   component: ResultPage,
@@ -17,6 +18,7 @@ type AnalysisRecord = {
   manager_name: string | null;
   status: string;
   analysis_result: string | null;
+  jd_data: JDData | null;
   created_at: string;
 };
 
