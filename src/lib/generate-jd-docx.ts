@@ -16,6 +16,8 @@ export interface JDData {
   version_number: string;
   type_of_employment: string;
   main_job_purpose: string;
+  reporting_structure?: string;
+  kpis?: { kpi: string; measurement: string; target: string }[];
   key_result_areas: { area: string; responsibilities: string[]; kras: string[] }[];
   internal_communication: string[];
   external_communication: string[];
