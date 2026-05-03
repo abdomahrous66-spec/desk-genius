@@ -48,9 +48,9 @@ function SubmitPage() {
           manager_name: form.manager_name.trim() || null,
           raw_input: {
             purpose: form.purpose,
-            tasks: form.tasks,
-            responsibilities: form.responsibilities,
-            skills: form.skills,
+            tasks: form.tasksAndResponsibilities,
+            responsibilities: form.tasksAndResponsibilities,
+            skills: "",
             qualifications: form.qualifications,
             workingConditions: form.workingConditions,
             reportsTo: form.reportsTo,
