@@ -164,43 +164,23 @@ function SubmitPage() {
                 />
               </Field>
 
-              <Field label="المهام والأنشطة الأساسية">
+              <Field label="المهام والأنشطة الأساسية + المسؤوليات">
                 <Textarea
-                  value={form.tasks}
-                  onChange={(e) => update("tasks", e.target.value)}
-                  placeholder="اكتب المهام اللي بيعملها صاحب الوظيفة (لو فاكر بعضها بس، اكتبهم)"
-                  rows={4}
-                  maxLength={2000}
+                  value={form.tasksAndResponsibilities}
+                  onChange={(e) => update("tasksAndResponsibilities", e.target.value)}
+                  placeholder="اكتب المهام والمسؤوليات اللي بيعملها صاحب الوظيفة في مكان واحد. الـ AI هيقسمها تلقائياً لـ Responsibilities و KRAs."
+                  rows={5}
+                  maxLength={3000}
                 />
               </Field>
 
-              <Field label="المسؤوليات">
-                <Textarea
-                  value={form.responsibilities}
-                  onChange={(e) => update("responsibilities", e.target.value)}
-                  placeholder="إيه المسؤوليات الموكلة للوظيفة؟"
-                  rows={3}
-                  maxLength={2000}
-                />
-              </Field>
-
-              <Field label="المهارات المطلوبة">
-                <Textarea
-                  value={form.skills}
-                  onChange={(e) => update("skills", e.target.value)}
-                  placeholder="مهارات تقنية، شخصية، لغات، برامج..."
-                  rows={3}
-                  maxLength={1500}
-                />
-              </Field>
-
-              <Field label="المؤهلات والخبرات المطلوبة">
+              <Field label="المؤهلات والخبرات والمهارات المطلوبة (Education, Experience, Computer Skills, Language Skills)">
                 <Textarea
                   value={form.qualifications}
                   onChange={(e) => update("qualifications", e.target.value)}
-                  placeholder="الشهادات، سنوات الخبرة، التخصص..."
-                  rows={2}
-                  maxLength={1000}
+                  placeholder="اكتب كل حاجة مع بعض: المؤهل العلمي، سنوات الخبرة، مهارات الكمبيوتر والبرامج، اللغات المطلوبة..."
+                  rows={5}
+                  maxLength={2000}
                 />
               </Field>
 
