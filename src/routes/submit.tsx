@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages } from "lucide-react";
 
@@ -19,78 +22,82 @@ const T = {
   ar: {
     backHome: "الرجوع للرئيسية",
     pastRequests: "الطلبات السابقة",
-    badge: "تحليل وظيفي ذكي",
+    badge: "تحليل وظيفي ذكي · نهضة مصر",
     title: "بيانات الوظيفة",
     subtitle: "املأ ما تعرفه عن الوظيفة. الحقول الفاضية هيكملها الذكاء الاصطناعي بناءً على خبرته.",
     info: "**المسمى الوظيفي** هو الحقل الإجباري الوحيد. باقي الحقول اختيارية.",
     jobTitle: "المسمى الوظيفي *",
     jobTitlePh: "مثال: مهندس برمجيات أول",
     sector: "القطاع (Sector)",
-    sectorPh: "مثال: تكنولوجيا المعلومات / صناعي / مالي",
+    sectorPh: "مثال: Commercial / Operations / Finance",
     department: "القسم / الإدارة",
-    departmentPh: "مثال: تطوير البرمجيات",
-    manager: "اسم المدير المسؤول",
-    managerPh: "اسمك",
-    reportsTo: "المنصب المباشر التابع له",
-    reportsToPh: "مثال: مدير قسم التطوير",
-    structure: "هيكل التبعية (Position Reporting Line / Structure)",
-    structurePh: "اكتب الهيكل الوظيفي يدوياً، مثال: CEO → CTO → Engineering Manager → هذه الوظيفة → Junior Devs",
-    purpose: "الهدف من الوظيفة",
+    departmentPh: "مثال: Sales",
+    location: "الموقع (Location) *",
+    locationPh: "اختر الموقع",
+    reportsTo: "Reporting to (المنصب المباشر)",
+    reportsToPh: "مثال: CEO / Sales Director",
+    directReports: "أسماء/مسميات المرؤوسين المباشرين",
+    directReportsPh: "كل مرؤوس في سطر، مثال:\nSales Manager\nMarketing Manager\nProduct Manager",
+    purpose: "الهدف من الوظيفة (Main Job Purpose)",
     purposePh: "إيه الهدف الأساسي من الوظيفة دي؟ (اختياري)",
     tasks: "المهام والمسؤوليات",
-    tasksPh: "اكتب المهام والمسؤوليات اللي بيعملها صاحب الوظيفة. الـ AI هيقسمها لـ Responsibilities و KRAs.",
-    qualifications: "المؤهلات والخبرات والمهارات (Education, Experience, Computer & Language Skills)",
-    qualificationsPh: "اكتب كل حاجة مع بعض: المؤهل العلمي، سنوات الخبرة، مهارات الكمبيوتر، اللغات...",
+    tasksPh: "اكتب المهام والمسؤوليات. الـ AI هيقسمها لـ Responsibilities و KRAs.",
+    qualifications: "المؤهلات والخبرات والمهارات",
+    qualificationsPh: "Education, Experience, Computer Skills, Languages...",
     kpis: "مؤشرات الأداء (KPIs) — اختياري",
-    kpisPh: "اكتب الـ KPIs لو موجودة. لو سيبتها فاضية مش هيظهر جدول KPIs في الملف. مثال: زمن الاستجابة، نسبة رضا العملاء، عدد المشاريع المسلمة...",
+    kpisPh: "اكتب الـ KPIs لو موجودة. لو سيبتها فاضية مش هيظهر جدول KPIs.",
     workCond: "ظروف العمل + Internal & External Communication",
-    workCondPh: "ساعات عمل، مكان، سفر، ضغط، الجهات الداخلية اللي بيتعامل معاها (أقسام)، والجهات الخارجية (عملاء، موردين، جهات حكومية)...",
+    workCondPh: "ساعات عمل، مكان، ضغط، الأقسام الداخلية، الجهات الخارجية...",
     notes: "ملاحظات إضافية",
     notesPh: "أي معلومات تانية مهمة",
     submit: "ابدأ التحليل الذكي",
     submitting: "جاري الإرسال...",
     errEmpty: "من فضلك أدخل المسمى الوظيفي على الأقل",
+    errLocation: "من فضلك اختر الموقع",
     received: "تم استلام البيانات، جاري التحليل...",
     errSend: "حصلت مشكلة في إرسال البيانات، حاول تاني",
   },
   en: {
     backHome: "Back to Home",
     pastRequests: "Past Requests",
-    badge: "Smart Job Analysis",
+    badge: "Smart Job Analysis · Nahdet Misr",
     title: "Job Information",
-    subtitle: "Fill what you know about the job. AI will fill the gaps based on its expertise.",
+    subtitle: "Fill what you know. AI will fill the gaps based on its expertise.",
     info: "**Job Title** is the only required field. All others are optional.",
     jobTitle: "Job Title *",
     jobTitlePh: "e.g. Senior Software Engineer",
     sector: "Sector",
-    sectorPh: "e.g. Information Technology / Industrial / Financial",
+    sectorPh: "e.g. Commercial / Operations / Finance",
     department: "Department",
-    departmentPh: "e.g. Software Development",
-    manager: "Manager Name",
-    managerPh: "Your name",
-    reportsTo: "Direct Reporting Position",
-    reportsToPh: "e.g. Engineering Manager",
-    structure: "Position Reporting Line (Structure)",
-    structurePh: "Write the structure manually, e.g.: CEO → CTO → Engineering Manager → This Role → Junior Devs",
-    purpose: "Job Purpose",
-    purposePh: "What's the main purpose of this role? (optional)",
+    departmentPh: "e.g. Sales",
+    location: "Location *",
+    locationPh: "Select location",
+    reportsTo: "Reporting to (Direct Manager)",
+    reportsToPh: "e.g. CEO / Sales Director",
+    directReports: "Direct Subordinates (titles)",
+    directReportsPh: "One per line, e.g.:\nSales Manager\nMarketing Manager\nProduct Manager",
+    purpose: "Main Job Purpose",
+    purposePh: "Main purpose of this role (optional)",
     tasks: "Tasks & Responsibilities",
-    tasksPh: "Describe the tasks and responsibilities. AI will split them into Responsibilities and KRAs.",
-    qualifications: "Qualifications, Experience & Skills (Education, Experience, Computer & Language Skills)",
-    qualificationsPh: "Write all together: education, years of experience, computer skills, languages...",
+    tasksPh: "Describe tasks. AI will split them into Responsibilities and KRAs.",
+    qualifications: "Qualifications, Experience & Skills",
+    qualificationsPh: "Education, Experience, Computer Skills, Languages...",
     kpis: "Key Performance Indicators (KPIs) — optional",
-    kpisPh: "List KPIs if any. If left empty, the KPIs table will not appear in the Word file. e.g.: response time, customer satisfaction, projects delivered...",
+    kpisPh: "List KPIs if any. If empty, the KPIs table will not appear.",
     workCond: "Working Conditions + Internal & External Communication",
-    workCondPh: "Working hours, location, travel, pressure, internal stakeholders (departments), external parties (clients, suppliers, government)...",
+    workCondPh: "Hours, location, pressure, internal departments, external parties...",
     notes: "Additional Notes",
     notesPh: "Any other important info",
     submit: "Start Smart Analysis",
     submitting: "Submitting...",
     errEmpty: "Please enter at least the Job Title",
+    errLocation: "Please select a location",
     received: "Data received, analyzing...",
     errSend: "Something went wrong, try again",
   },
 } as const;
+
+const LOCATIONS = ["Borg", "Fagala", "October"];
 
 function SubmitPage() {
   const navigate = useNavigate();
@@ -103,13 +110,13 @@ function SubmitPage() {
     job_title: "",
     sector: "",
     department: "",
-    manager_name: "",
+    location: "",
     purpose: "",
     tasksAndResponsibilities: "",
     qualifications: "",
     workingConditions: "",
     reportsTo: "",
-    structure: "",
+    directReports: "",
     kpis: "",
     notes: "",
   });
@@ -122,6 +129,10 @@ function SubmitPage() {
       toast.error(t.errEmpty);
       return;
     }
+    if (!form.location) {
+      toast.error(t.errLocation);
+      return;
+    }
     setSubmitting(true);
     try {
       const { data: insertData, error: insertErr } = await supabase
@@ -129,9 +140,10 @@ function SubmitPage() {
         .insert({
           job_title: form.job_title.trim(),
           department: form.department.trim() || null,
-          manager_name: form.manager_name.trim() || null,
+          manager_name: null,
           raw_input: {
             sector: form.sector,
+            location: form.location,
             purpose: form.purpose,
             tasks: form.tasksAndResponsibilities,
             responsibilities: form.tasksAndResponsibilities,
@@ -139,7 +151,7 @@ function SubmitPage() {
             qualifications: form.qualifications,
             workingConditions: form.workingConditions,
             reportsTo: form.reportsTo,
-            structure: form.structure,
+            directReports: form.directReports,
             kpis: form.kpis,
             notes: form.notes,
           },
@@ -240,13 +252,17 @@ function SubmitPage() {
                   maxLength={100}
                 />
               </Field>
-              <Field label={t.manager}>
-                <Input
-                  value={form.manager_name}
-                  onChange={(e) => update("manager_name", e.target.value)}
-                  placeholder={t.managerPh}
-                  maxLength={100}
-                />
+              <Field label={t.location} required>
+                <Select value={form.location} onValueChange={(v) => update("location", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.locationPh} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LOCATIONS.map((loc) => (
+                      <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
             </div>
 
@@ -255,17 +271,17 @@ function SubmitPage() {
                 value={form.reportsTo}
                 onChange={(e) => update("reportsTo", e.target.value)}
                 placeholder={t.reportsToPh}
-                maxLength={100}
+                maxLength={150}
               />
             </Field>
 
-            <Field label={t.structure}>
+            <Field label={t.directReports}>
               <Textarea
-                value={form.structure}
-                onChange={(e) => update("structure", e.target.value)}
-                placeholder={t.structurePh}
-                rows={3}
-                maxLength={1500}
+                value={form.directReports}
+                onChange={(e) => update("directReports", e.target.value)}
+                placeholder={t.directReportsPh}
+                rows={4}
+                maxLength={2000}
               />
             </Field>
 
