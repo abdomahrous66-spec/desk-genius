@@ -117,9 +117,22 @@ serve(async (req) => {
             experience: { type: "array", items: { type: "string" } },
             computer_skills: { type: "array", items: { type: "string" } },
             language_skills: { type: "array", items: { type: "string" } },
-            competency: { type: "array", items: { type: "string" } },
+            core_competencies: { type: "array", items: { type: "string" } },
+            functional_competencies: { type: "array", items: { type: "string" } },
+            leadership_competencies: { type: "array", items: { type: "string" } },
           },
-          required: ["education", "experience", "computer_skills", "language_skills", "competency"],
+          required: ["education", "experience", "computer_skills", "language_skills", "core_competencies", "functional_competencies", "leadership_competencies"],
+          additionalProperties: false,
+        },
+        hse_requirements: { type: "array", items: { type: "string" } },
+        structure_boxes: {
+          type: "object",
+          properties: {
+            manager: { type: "string" },
+            position: { type: "string" },
+            subordinates: { type: "array", items: { type: "string" } },
+          },
+          required: ["manager", "position", "subordinates"],
           additionalProperties: false,
         },
       },
@@ -129,34 +142,49 @@ serve(async (req) => {
         "version_number", "type_of_employment", "main_job_purpose",
         "key_result_areas", "internal_communication", "external_communication",
         "work_environment", "reports", "position_dimensions", "qualifications",
-        "reporting_structure", "kpis",
+        "reporting_structure", "kpis", "hse_requirements", "structure_boxes",
       ],
       additionalProperties: false,
     };
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const userPrompt = `You are an expert HR consultant. The manager submitted partial information about a job. Use your professional expertise to fill all gaps with reasonable, industry-standard content. Produce BOTH a Job Analysis (markdown) AND a structured Job Description matching the company template.
+    const userPrompt = `You are an expert HR consultant for Nahdet Misr Publishing Group. The manager submitted partial information about a job. Use your professional expertise to fill all gaps with reasonable, industry-standard content.
 
 Manager input:
 - Job Title: ${record.job_title}
 - Sector: ${input.sector || "(infer)"}
 - Department: ${record.department || "(infer)"}
-- Manager Name: ${record.manager_name || "(not provided)"}
+- Location (REQUIRED, use exactly): ${input.location || "Borg"}
 - Purpose: ${input.purpose || "(infer)"}
-- Tasks & Responsibilities (combined - split intelligently into Responsibilities and KRAs): ${input.tasks || input.responsibilities || "(infer)"}
-- Qualifications (combined - extract Education, Experience, Computer Skills, Language Skills): ${input.qualifications || "(infer)"}
-- Working Conditions + Internal/External Communication (extract internal stakeholders/departments AND external parties separately): ${input.workingConditions || "(infer)"}
-- Reports To: ${input.reportsTo || "(infer)"}
-- Reporting Structure (Position Reporting Line - manager wrote this manually, USE AS-IS, do not invent): ${input.structure || "(leave empty string if not provided)"}
-- KPIs (manager-provided. If empty, return empty array []. DO NOT invent KPIs): ${input.kpis || "(EMPTY - return [])"}
+- Tasks & Responsibilities (split intelligently into Responsibilities and KRAs): ${input.tasks || input.responsibilities || "(infer)"}
+- Qualifications (extract Education, Experience, Computer Skills, Language Skills): ${input.qualifications || "(infer)"}
+- Working Conditions + Internal/External Communication: ${input.workingConditions || "(infer)"}
+- Reports To (direct manager title): ${input.reportsTo || "(infer based on seniority)"}
+- Direct Subordinates (titles, one per line): ${input.directReports || "(infer 3-6 reasonable subordinates based on seniority, or [] for IC roles)"}
+- KPIs (if empty, return []. DO NOT invent KPIs): ${input.kpis || "(EMPTY - return [])"}
 - Notes: ${input.notes || "None"}
 
 Today's date: ${today}
 
-You MUST call the tool "save_job_outputs" exactly once with:
-1) "analysis_markdown": A complete English Job Analysis in markdown with sections: Job Identification, Job Purpose, Key Duties, Essential Tasks, KSAs, Qualifications, Working Conditions, Reporting Relationships, KPIs, Competency Framework.
-2) "jd": A fully populated Job Description object matching the schema. Be thorough — include 5–8 Key Result Areas (each with 4–8 responsibilities and 3–6 KRAs), 4–8 reports, realistic work environment values, and complete qualifications. From the Working Conditions input, intelligently SEPARATE internal_communication (departments inside the company) from external_communication (clients, suppliers, government, partners). For "reporting_structure": use exactly what the manager provided as-is (preserve arrows/format); if empty, return empty string "". For "kpis": ONLY include items if the manager provided KPIs; otherwise return empty array []. Use today's date for last_update. Default version_number to "1.0". Default type_of_employment to "Full-Time" unless otherwise indicated.`;
+Call "save_job_outputs" with:
+1) "analysis_markdown": Complete English Job Analysis markdown.
+2) "jd": Full Job Description matching the schema.
+
+CRITICAL RULES:
+- "location": exactly "${input.location || "Borg"}".
+- "structure_boxes": ALWAYS populate. manager = Reports-To title, position = job title, subordinates = array of subordinate titles (infer 3-6 if not given, or [] for IC).
+- "reporting_structure": text backup like "Manager: <X>\\nPosition: <Y>\\nSubordinates: <a>, <b>".
+- "hse_requirements": ALWAYS auto-generate 4-7 professional HSE items (compliance with HSE policies, attending safety trainings, incident reporting, PPE, ergonomics, etc.) — even if not requested.
+- Competencies split into THREE arrays (NAMES ONLY, no descriptions):
+  * core_competencies: 3-5 (Agility, Customer Focus, Work Efficiency, Integrity, Teamwork...)
+  * functional_competencies: 3-6 SPECIFIC to the role
+  * leadership_competencies: 3-5 if role manages people, else []
+- 5-8 Key Result Areas (each 4-8 responsibilities, 3-6 KRAs).
+- 4-8 reports.
+- "kpis": only if manager provided; else [].
+- last_update = today. version_number = "1.0". type_of_employment = "Full-Time".
+- All output professional English.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

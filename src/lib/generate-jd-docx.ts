@@ -1,6 +1,6 @@
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  HeadingLevel, AlignmentType, WidthType, BorderStyle, ShadingType, PageOrientation,
+  AlignmentType, WidthType, BorderStyle, ShadingType, PageOrientation,
 } from "docx";
 import { saveAs } from "file-saver";
 
@@ -17,6 +17,7 @@ export interface JDData {
   type_of_employment: string;
   main_job_purpose: string;
   reporting_structure?: string;
+  structure_boxes?: { manager: string; position: string; subordinates: string[] };
   kpis?: { kpi: string; measurement: string; target: string }[];
   key_result_areas: { area: string; responsibilities: string[]; kras: string[] }[];
   internal_communication: string[];
@@ -34,14 +35,22 @@ export interface JDData {
   };
   qualifications: {
     education: string[]; experience: string[]; computer_skills: string[];
-    language_skills: string[]; competency: string[];
+    language_skills: string[];
+    core_competencies?: string[];
+    functional_competencies?: string[];
+    leadership_competencies?: string[];
+    competency?: string[]; // legacy
   };
+  hse_requirements?: string[];
 }
 
-const HEADER_FILL = "1F4E79";
-const SUB_FILL = "D9E2F3";
+const HEADER_FILL = "C0392B"; // Nahdet Misr red
+const SUB_FILL = "FADBD8";
+const BOX_FILL = "FDEDEC";
 const BORDER = { style: BorderStyle.SINGLE, size: 4, color: "999999" };
+const BOX_BORDER = { style: BorderStyle.SINGLE, size: 8, color: "C0392B" };
 const cellBorders = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
+const boxBorders = { top: BOX_BORDER, bottom: BOX_BORDER, left: BOX_BORDER, right: BOX_BORDER };
 
 const txt = (s: string, opts: { bold?: boolean; color?: string; size?: number } = {}) =>
   new TextRun({ text: s || "", bold: opts.bold, color: opts.color, size: opts.size, font: "Calibri" });
@@ -51,13 +60,13 @@ const para = (children: TextRun[], align?: typeof AlignmentType[keyof typeof Ali
 
 const cell = (
   content: Paragraph[] | string,
-  opts: { bold?: boolean; fill?: string; color?: string; width?: number; colSpan?: number } = {}
+  opts: { bold?: boolean; fill?: string; color?: string; width?: number; colSpan?: number; align?: typeof AlignmentType[keyof typeof AlignmentType]; borders?: typeof cellBorders } = {}
 ) => {
   const paragraphs = typeof content === "string"
-    ? [para([txt(content, { bold: opts.bold, color: opts.color })])]
+    ? [para([txt(content, { bold: opts.bold, color: opts.color })], opts.align)]
     : content;
   return new TableCell({
-    borders: cellBorders,
+    borders: opts.borders || cellBorders,
     width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
     shading: opts.fill ? { fill: opts.fill, type: ShadingType.CLEAR, color: "auto" } : undefined,
     margins: { top: 80, bottom: 80, left: 120, right: 120 },
@@ -78,10 +87,84 @@ const bulletParas = (items: string[]) =>
 
 const TOTAL = 9360;
 
+// Build the structure-boxes table: Manager (top) -> Position (middle) -> Subordinates row (bottom)
+function buildStructureBoxes(sb: { manager: string; position: string; subordinates: string[] }) {
+  const tables: Table[] = [];
+
+  // Manager box (centered, single cell)
+  tables.push(new Table({
+    width: { size: TOTAL, type: WidthType.DXA },
+    columnWidths: [TOTAL],
+    rows: [new TableRow({
+      children: [cell(
+        [para([txt(sb.manager || "—", { bold: true, size: 22 })], AlignmentType.CENTER)],
+        { fill: BOX_FILL, width: TOTAL, borders: boxBorders }
+      )],
+    })],
+  }));
+  // Connector "↓"
+  tables.push(new Table({
+    width: { size: TOTAL, type: WidthType.DXA },
+    columnWidths: [TOTAL],
+    rows: [new TableRow({
+      children: [new TableCell({
+        borders: { top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" } },
+        children: [para([txt("↓", { bold: true, size: 28, color: "C0392B" })], AlignmentType.CENTER)],
+      })],
+    })],
+  }));
+  // Position box (highlighted)
+  tables.push(new Table({
+    width: { size: TOTAL, type: WidthType.DXA },
+    columnWidths: [TOTAL],
+    rows: [new TableRow({
+      children: [cell(
+        [para([txt(sb.position, { bold: true, color: "FFFFFF", size: 24 })], AlignmentType.CENTER)],
+        { fill: HEADER_FILL, width: TOTAL, borders: boxBorders }
+      )],
+    })],
+  }));
+
+  if (sb.subordinates && sb.subordinates.length > 0) {
+    // Connector "↓"
+    tables.push(new Table({
+      width: { size: TOTAL, type: WidthType.DXA },
+      columnWidths: [TOTAL],
+      rows: [new TableRow({
+        children: [new TableCell({
+          borders: { top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" } },
+          children: [para([txt("↓", { bold: true, size: 28, color: "C0392B" })], AlignmentType.CENTER)],
+        })],
+      })],
+    }));
+    // Subordinates row (boxes side by side)
+    const n = sb.subordinates.length;
+    const colW = Math.floor(TOTAL / n);
+    const widths = Array(n).fill(colW);
+    tables.push(new Table({
+      width: { size: TOTAL, type: WidthType.DXA },
+      columnWidths: widths,
+      rows: [new TableRow({
+        children: sb.subordinates.map((sub, idx) => cell(
+          [para([txt(sub, { bold: true, size: 18 })], AlignmentType.CENTER)],
+          { fill: BOX_FILL, width: widths[idx], borders: boxBorders }
+        )),
+      })],
+    }));
+  }
+  return tables;
+}
+
 export async function generateJDDocx(data: JDData) {
   const children: (Paragraph | Table)[] = [];
 
-  // Title
+  // Branded title
+  children.push(new Paragraph({
+    children: [txt("Nahdet Misr Publishing Group", { bold: true, size: 22, color: "FFFFFF" })],
+    alignment: AlignmentType.CENTER,
+    shading: { fill: HEADER_FILL, type: ShadingType.CLEAR, color: "auto" },
+    spacing: { after: 0 },
+  }));
   children.push(new Paragraph({
     children: [txt("Job Profile", { bold: true, size: 32, color: "FFFFFF" })],
     alignment: AlignmentType.CENTER,
@@ -111,6 +194,20 @@ export async function generateJDDocx(data: JDData) {
     })),
   }));
   children.push(new Paragraph({ text: "" }));
+
+  // Position Reporting Line (Structure) — boxes
+  if (data.structure_boxes && data.structure_boxes.position) {
+    children.push(new Paragraph({
+      children: [txt("Position Reporting Line (Structure)", { bold: true, color: "FFFFFF", size: 24 })],
+      alignment: AlignmentType.CENTER,
+      shading: { fill: HEADER_FILL, type: ShadingType.CLEAR, color: "auto" },
+      spacing: { after: 200 },
+    }));
+    buildStructureBoxes(data.structure_boxes).forEach((t) => {
+      children.push(t);
+      children.push(new Paragraph({ text: "" }));
+    });
+  }
 
   // Main Job Purpose
   children.push(new Table({
@@ -181,24 +278,7 @@ export async function generateJDDocx(data: JDData) {
   }));
   children.push(new Paragraph({ text: "" }));
 
-  // Position Reporting Line (Structure) — only if provided
-  if (data.reporting_structure && data.reporting_structure.trim()) {
-    const structureLines = data.reporting_structure.split("\n").map(l => l.trim()).filter(Boolean);
-    children.push(new Table({
-      width: { size: TOTAL, type: WidthType.DXA },
-      columnWidths: [TOTAL],
-      rows: [
-        sectionHeader("Position Reporting Line (Structure)", 1, TOTAL),
-        new TableRow({
-          children: [cell(
-            structureLines.map(l => new Paragraph({ children: [txt(l)], spacing: { after: 60 } })),
-            { width: TOTAL }
-          )],
-        }),
-      ],
-    }));
-    children.push(new Paragraph({ text: "" }));
-  }
+  // Work Environment
   const we = data.work_environment;
   const weRows = [
     ["Indoor", we.indoor], ["Outdoor", we.outdoor], ["Working Hazards", we.working_hazards],
@@ -266,23 +346,83 @@ export async function generateJDDocx(data: JDData) {
   }));
   children.push(new Paragraph({ text: "" }));
 
-  // Qualifications
+  // HSE Requirements
+  if (data.hse_requirements && data.hse_requirements.length > 0) {
+    children.push(new Table({
+      width: { size: TOTAL, type: WidthType.DXA },
+      columnWidths: [TOTAL],
+      rows: [
+        sectionHeader("Health, Safety & Environment (HSE) Requirements", 1, TOTAL),
+        new TableRow({ children: [cell(bulletParas(data.hse_requirements), { width: TOTAL })] }),
+      ],
+    }));
+    children.push(new Paragraph({ text: "" }));
+  }
+
+  // Qualifications + Competencies
   const q = data.qualifications;
+  // Build competency cell content with three sub-headings
+  const core = q.core_competencies || [];
+  const func = q.functional_competencies || [];
+  const lead = q.leadership_competencies || [];
+  // Backward compat: if only legacy competency present, dump it under core
+  const legacyOnly = !core.length && !func.length && !lead.length && q.competency && q.competency.length;
+  const compParas: Paragraph[] = [];
+  if (legacyOnly) {
+    compParas.push(...bulletParas(q.competency!));
+  } else {
+    if (core.length) {
+      compParas.push(new Paragraph({ children: [txt("Core Competencies:", { bold: true, color: "C0392B" })], spacing: { after: 60 } }));
+      compParas.push(...bulletParas(core));
+    }
+    if (func.length) {
+      compParas.push(new Paragraph({ children: [txt("Functional Competencies:", { bold: true, color: "C0392B" })], spacing: { before: 120, after: 60 } }));
+      compParas.push(...bulletParas(func));
+    }
+    if (lead.length) {
+      compParas.push(new Paragraph({ children: [txt("Leadership Competencies:", { bold: true, color: "C0392B" })], spacing: { before: 120, after: 60 } }));
+      compParas.push(...bulletParas(lead));
+    }
+  }
+
   const qRows = [
-    ["Education", q.education], ["Experience", q.experience], ["Computer Skills", q.computer_skills],
-    ["Language Skills", q.language_skills], ["Competency", q.competency],
-  ] as const;
+    new TableRow({
+      children: [
+        cell("Education", { bold: true, fill: SUB_FILL, width: 3120 }),
+        cell(bulletParas(q.education), { width: 6240 }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        cell("Experience", { bold: true, fill: SUB_FILL, width: 3120 }),
+        cell(bulletParas(q.experience), { width: 6240 }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        cell("Computer Skills", { bold: true, fill: SUB_FILL, width: 3120 }),
+        cell(bulletParas(q.computer_skills), { width: 6240 }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        cell("Language Skills", { bold: true, fill: SUB_FILL, width: 3120 }),
+        cell(bulletParas(q.language_skills), { width: 6240 }),
+      ],
+    }),
+    new TableRow({
+      children: [
+        cell("Competency", { bold: true, fill: SUB_FILL, width: 3120 }),
+        cell(compParas.length ? compParas : [new Paragraph({ children: [txt("")] })], { width: 6240 }),
+      ],
+    }),
+  ];
   children.push(new Table({
     width: { size: TOTAL, type: WidthType.DXA },
     columnWidths: [3120, 6240],
     rows: [
-      sectionHeader("Qualifications", 2, TOTAL),
-      ...qRows.map(([k, v]) => new TableRow({
-        children: [
-          cell(k, { bold: true, fill: SUB_FILL, width: 3120 }),
-          cell(bulletParas(v), { width: 6240 }),
-        ],
-      })),
+      sectionHeader("Job Requirement", 2, TOTAL),
+      ...qRows,
     ],
   }));
 
