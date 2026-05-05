@@ -346,18 +346,7 @@ export async function generateJDDocx(data: JDData) {
   }));
   children.push(new Paragraph({ text: "" }));
 
-  // HSE Requirements
-  if (data.hse_requirements && data.hse_requirements.length > 0) {
-    children.push(new Table({
-      width: { size: TOTAL, type: WidthType.DXA },
-      columnWidths: [TOTAL],
-      rows: [
-        sectionHeader("Health, Safety & Environment (HSE) Requirements", 1, TOTAL),
-        new TableRow({ children: [cell(bulletParas(data.hse_requirements), { width: TOTAL })] }),
-      ],
-    }));
-    children.push(new Paragraph({ text: "" }));
-  }
+  // HSE is now merged into Key Result Areas as the last block (see analyze-job).
 
   // Qualifications + Competencies
   const q = data.qualifications;
