@@ -236,7 +236,7 @@ function SubmitPage() {
               hiring_promotion_authority: form.pd_hiring,
             },
             reports_input: reports.filter(r => r.name.trim()).map(r => ({ ...r })),
-          } as Record<string, unknown>,
+          } as never,
           status: "processing",
         }])
         .select()
