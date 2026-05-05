@@ -210,7 +210,7 @@ function SubmitPage() {
     try {
       const { data: insertData, error: insertErr } = await supabase
         .from("job_analyses")
-        .insert({
+        .insert([{
           job_title: finalTitle,
           department: department || null,
           manager_name: null,
@@ -238,7 +238,7 @@ function SubmitPage() {
             reports_input: reports.filter(r => r.name.trim()),
           },
           status: "processing",
-        })
+        }])
         .select()
         .single();
 
