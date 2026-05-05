@@ -235,8 +235,8 @@ function SubmitPage() {
               annual_amount: form.pd_annual,
               hiring_promotion_authority: form.pd_hiring,
             },
-            reports_input: reports.filter(r => r.name.trim()),
-          },
+            reports_input: reports.filter(r => r.name.trim()).map(r => ({ ...r })),
+          } as Record<string, unknown>,
           status: "processing",
         }])
         .select()
