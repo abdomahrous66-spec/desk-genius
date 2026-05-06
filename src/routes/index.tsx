@@ -40,12 +40,6 @@ function Index() {
                   ابدأ تحليل وظيفة
                 </Button>
               </Link>
-              <Link to="/dashboard">
-                <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <Clock className="w-5 h-5 ml-2" />
-                  عرض الطلبات السابقة
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
