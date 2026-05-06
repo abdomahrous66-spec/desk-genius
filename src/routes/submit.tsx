@@ -437,7 +437,7 @@ function SubmitPage() {
                 <Textarea value={form.kpis} onChange={(e) => update("kpis", e.target.value)} placeholder={t.kpisPh} rows={3} maxLength={1500} />
               </Field>
 
-              <Field label={t.notes} required>
+              <Field label={t.notes}>
                 <Textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} placeholder={t.notesPh} rows={2} maxLength={1000} />
               </Field>
             </div>
