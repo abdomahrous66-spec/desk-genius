@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileText, Sparkles, Send, Clock } from "lucide-react";
+import { FileText, Sparkles, Send } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -38,12 +38,6 @@ function Index() {
                 <Button size="lg" variant="secondary" className="text-base px-8 shadow-elevated">
                   <Send className="w-5 h-5 ml-2" />
                   ابدأ تحليل وظيفة
-                </Button>
-              </Link>
-              <Link to="/dashboard">
-                <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <Clock className="w-5 h-5 ml-2" />
-                  عرض الطلبات السابقة
                 </Button>
               </Link>
             </div>
