@@ -279,9 +279,6 @@ function SubmitPage() {
               <Languages className="w-4 h-4" />
               {lang === "ar" ? "English" : "العربية"}
             </Button>
-            <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary">
-              {t.pastRequests}
-            </Link>
           </div>
         </div>
 
