@@ -168,6 +168,10 @@ serve(async (req) => {
     };
 
     const today = new Date().toISOString().slice(0, 10);
+    const outputLang = (input.output_language as string) === "ar" ? "ar" : "en";
+    const langInstruction = outputLang === "ar"
+      ? "ALL output text MUST be in professional Modern Standard Arabic (العربية الفصحى). Job titles can stay in English if needed."
+      : "All output text MUST be in professional English.";
 
     const userPrompt = `You are an expert HR consultant. The manager submitted information about a job. Fill any missing professional details with industry-standard content.
 
@@ -175,6 +179,7 @@ Manager input:
 - Job Title: ${record.job_title}
 - Sector: ${input.sector || "(infer)"}
 - Department: ${record.department || "(infer)"}
+- Collar Type: ${input.collar || "white"} (${outputLang === "ar" ? "BLUE collar - Arabic output" : "WHITE collar - English output"})
 - Location (REQUIRED, use exactly): ${input.location || "Borg"}
 - Purpose: ${input.purpose || "(infer)"}
 - Tasks & Responsibilities: ${input.tasks || ""}
@@ -183,7 +188,7 @@ Manager input:
 - Reports To: ${input.reportsTo || ""}
 - Direct Subordinates: ${input.directReports || "(infer 3-6 if not given, or [] for IC)"}
 - KPIs (if empty, return []): ${input.kpis || "(EMPTY - return [])"}
-- Notes: ${input.notes || "None"}
+- Notes (optional, may be empty): ${input.notes || "None"}
 
 Manager-provided REPORTS (use exactly, do not invent more):
 ${JSON.stringify(reportsInput, null, 2)}
@@ -199,10 +204,11 @@ ${compHint}
 Today: ${today}
 
 Call "save_job_outputs" with:
-1) "analysis_markdown": Full English Job Analysis markdown.
+1) "analysis_markdown": Full Job Analysis markdown.
 2) "jd": Full Job Description matching schema.
 
 CRITICAL RULES:
+- ${langInstruction}
 - "location": exactly "${input.location || "Borg"}".
 - "reports": use the EXACT manager-provided list above. If a row's name is "N/A", omit it. Do not invent additional reports.
 - "position_dimensions": use the manager-provided values above (split into bullet arrays). If value is "N/A" return ["N/A"].
@@ -210,10 +216,9 @@ CRITICAL RULES:
 - "reporting_structure": text backup.
 - "key_result_areas": 5-8 KRAs (each 4-8 responsibilities, 3-6 KRAs).
 - "hse_kra": MANDATORY. Auto-generate Health, Safety & Environment as a KRA-style block (4-7 responsibilities + 3-5 KRAs) covering compliance with HSE policy, PPE, training, incident reporting, ergonomics, environmental practices. This will be appended to KRAs in the document.
-- Competencies: use MATCHED names exactly when provided. Three arrays: core_competencies, functional_competencies, leadership_competencies (NAMES ONLY, no indicators).
+- Competencies: use MATCHED names exactly when provided. Three arrays: core_competencies, functional_competencies, leadership_competencies (NAMES ONLY, no indicators). Keep competency names in English even if other content is Arabic.
 - "kpis": only if manager provided; else [].
-- last_update = today. version_number = "1.0". type_of_employment = "Full-Time".
-- All output professional English.`;
+- last_update = today. version_number = "1.0". type_of_employment = "Full-Time".`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
