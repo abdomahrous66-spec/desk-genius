@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileText, Sparkles, Send, Clock } from "lucide-react";
+import { FileText, Sparkles, Send } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
