@@ -54,8 +54,12 @@ const T = {
     qualificationsPh: "Education, Experience, Computer Skills, Languages...",
     workCond: "ظروف العمل + Internal & External Communication *",
     workCondPh: "ساعات عمل، مكان، الأقسام الداخلية، الجهات الخارجية...",
-    notes: "ملاحظات إضافية *",
-    notesPh: "أي معلومات تانية مهمة",
+    notes: "ملاحظات إضافية — اختياري",
+    notesPh: "أي معلومات تانية مهمة (اختياري)",
+    collar: "نوع الوظيفة (Collar) *",
+    collarPh: "اختر نوع الوظيفة",
+    blueCollar: "Blue Collar (المخرجات بالعربي)",
+    whiteCollar: "White Collar (المخرجات بالإنجليزي)",
     kpis: "مؤشرات الأداء (KPIs) — اختياري",
     kpisPh: "اكتب الـ KPIs لو موجودة. لو سيبتها فاضية مش هيظهر جدول KPIs.",
     reportsSection: "التقارير (Reports) *",
@@ -109,8 +113,12 @@ const T = {
     qualificationsPh: "Education, Experience, Computer Skills, Languages...",
     workCond: "Working Conditions + Internal & External Communication *",
     workCondPh: "Hours, location, internal departments, external parties...",
-    notes: "Additional Notes *",
-    notesPh: "Any other important info",
+    notes: "Additional Notes — optional",
+    notesPh: "Any other important info (optional)",
+    collar: "Job Collar Type *",
+    collarPh: "Select collar type",
+    blueCollar: "Blue Collar (Output in Arabic)",
+    whiteCollar: "White Collar (Output in English)",
     kpis: "Key Performance Indicators (KPIs) — optional",
     kpisPh: "List KPIs if any. If empty, the KPIs table will not appear.",
     reportsSection: "Reports *",
@@ -150,6 +158,7 @@ function SubmitPage() {
   const [position, setPosition] = useState("");
   const [newPositionTitle, setNewPositionTitle] = useState("");
   const [approvedBy, setApprovedBy] = useState("");
+  const [collar, setCollar] = useState<"white" | "blue" | "">("");
 
   const sectors = useMemo(() => Object.keys(POSITIONS).sort(), []);
   const departments = useMemo(
@@ -192,9 +201,9 @@ function SubmitPage() {
 
     const finalTitle = isNewPosition ? newPositionTitle.trim() : position;
     const required = [
-      sector, department, finalTitle,
+      sector, department, finalTitle, collar,
       form.location, form.reportsTo, form.purpose, form.tasksAndResponsibilities,
-      form.qualifications, form.workingConditions, form.notes,
+      form.qualifications, form.workingConditions,
       form.pd_authority, form.pd_financial, form.pd_annual, form.pd_hiring,
     ];
     if (required.some(v => !v.trim()) || (isNewPosition && !approvedBy.trim())) {
@@ -219,6 +228,8 @@ function SubmitPage() {
             department,
             position_source: isNewPosition ? "new" : "existing",
             approved_by: isNewPosition ? approvedBy : "",
+            collar,
+            output_language: collar === "blue" ? "ar" : "en",
             location: form.location,
             purpose: form.purpose,
             tasks: form.tasksAndResponsibilities,
@@ -292,6 +303,16 @@ function SubmitPage() {
 
         <Card className="bg-gradient-card p-6 md:p-8 shadow-soft">
           <form onSubmit={handleSubmit} className="space-y-5">
+            <Field label={t.collar} required>
+              <Select value={collar} onValueChange={(v) => setCollar(v as "white" | "blue")}>
+                <SelectTrigger><SelectValue placeholder={t.collarPh} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="white">{t.whiteCollar}</SelectItem>
+                  <SelectItem value="blue">{t.blueCollar}</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
             {/* Sector / Department / Position cascading */}
             <div className="grid md:grid-cols-2 gap-4">
               <Field label={t.sector} required>
@@ -416,7 +437,7 @@ function SubmitPage() {
                 <Textarea value={form.kpis} onChange={(e) => update("kpis", e.target.value)} placeholder={t.kpisPh} rows={3} maxLength={1500} />
               </Field>
 
-              <Field label={t.notes} required>
+              <Field label={t.notes}>
                 <Textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} placeholder={t.notesPh} rows={2} maxLength={1000} />
               </Field>
             </div>

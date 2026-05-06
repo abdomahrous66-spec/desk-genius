@@ -1,0 +1,1 @@
+CREATE POLICY "Anyone can delete job analyses" ON public.job_analyses FOR DELETE USING (true);

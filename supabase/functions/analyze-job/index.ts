@@ -169,7 +169,7 @@ serve(async (req) => {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const userPrompt = `You are an expert HR consultant. The manager submitted information about a job. Fill any missing professional details with industry-standard content.
+    const userPrompt = `You are an expert HR consultant. The manager submitted information about a job. Fill any missing professional details with industry-standard content. OUTPUT LANGUAGE: ${input.output_language === "ar" ? "Arabic (Modern Standard, professional)" : "English (professional)"}.
 
 Manager input:
 - Job Title: ${record.job_title}
@@ -213,7 +213,7 @@ CRITICAL RULES:
 - Competencies: use MATCHED names exactly when provided. Three arrays: core_competencies, functional_competencies, leadership_competencies (NAMES ONLY, no indicators).
 - "kpis": only if manager provided; else [].
 - last_update = today. version_number = "1.0". type_of_employment = "Full-Time".
-- All output professional English.`;
+- All output in ${input.output_language === "ar" ? "professional Modern Standard Arabic (Blue Collar role)" : "professional English (White Collar role)"}.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
