@@ -172,6 +172,7 @@ function SubmitPage() {
 
   const [form, setForm] = useState({
     location: "",
+    collar: "",
     purpose: "",
     tasksAndResponsibilities: "",
     qualifications: "",
