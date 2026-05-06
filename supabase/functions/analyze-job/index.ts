@@ -169,7 +169,7 @@ serve(async (req) => {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const userPrompt = `You are an expert HR consultant. The manager submitted information about a job. Fill any missing professional details with industry-standard content.
+    const userPrompt = `You are an expert HR consultant. The manager submitted information about a job. Fill any missing professional details with industry-standard content. OUTPUT LANGUAGE: ${input.output_language === "ar" ? "Arabic (Modern Standard, professional)" : "English (professional)"}.
 
 Manager input:
 - Job Title: ${record.job_title}
