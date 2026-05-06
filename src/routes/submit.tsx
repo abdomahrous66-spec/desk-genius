@@ -54,12 +54,8 @@ const T = {
     qualificationsPh: "Education, Experience, Computer Skills, Languages...",
     workCond: "ظروف العمل + Internal & External Communication *",
     workCondPh: "ساعات عمل، مكان، الأقسام الداخلية، الجهات الخارجية...",
-    notes: "ملاحظات إضافية — اختياري",
-    notesPh: "أي معلومات تانية مهمة (اختياري)",
-    collar: "نوع الوظيفة *",
-    collarPh: "اختر النوع",
-    collarWhite: "White Collar (مخرجات إنجليزي)",
-    collarBlue: "BLUE Collar (مخرجات عربي)",
+    notes: "ملاحظات إضافية *",
+    notesPh: "أي معلومات تانية مهمة",
     kpis: "مؤشرات الأداء (KPIs) — اختياري",
     kpisPh: "اكتب الـ KPIs لو موجودة. لو سيبتها فاضية مش هيظهر جدول KPIs.",
     reportsSection: "التقارير (Reports) *",
@@ -113,12 +109,8 @@ const T = {
     qualificationsPh: "Education, Experience, Computer Skills, Languages...",
     workCond: "Working Conditions + Internal & External Communication *",
     workCondPh: "Hours, location, internal departments, external parties...",
-    notes: "Additional Notes — optional",
-    notesPh: "Any other important info (optional)",
-    collar: "Job Type *",
-    collarPh: "Select type",
-    collarWhite: "White Collar (English output)",
-    collarBlue: "BLUE Collar (Arabic output)",
+    notes: "Additional Notes *",
+    notesPh: "Any other important info",
     kpis: "Key Performance Indicators (KPIs) — optional",
     kpisPh: "List KPIs if any. If empty, the KPIs table will not appear.",
     reportsSection: "Reports *",
@@ -172,7 +164,6 @@ function SubmitPage() {
 
   const [form, setForm] = useState({
     location: "",
-    collar: "",
     purpose: "",
     tasksAndResponsibilities: "",
     qualifications: "",
@@ -202,8 +193,8 @@ function SubmitPage() {
     const finalTitle = isNewPosition ? newPositionTitle.trim() : position;
     const required = [
       sector, department, finalTitle,
-      form.location, form.collar, form.reportsTo, form.purpose, form.tasksAndResponsibilities,
-      form.qualifications, form.workingConditions,
+      form.location, form.reportsTo, form.purpose, form.tasksAndResponsibilities,
+      form.qualifications, form.workingConditions, form.notes,
       form.pd_authority, form.pd_financial, form.pd_annual, form.pd_hiring,
     ];
     if (required.some(v => !v.trim()) || (isNewPosition && !approvedBy.trim())) {
@@ -229,8 +220,6 @@ function SubmitPage() {
             position_source: isNewPosition ? "new" : "existing",
             approved_by: isNewPosition ? approvedBy : "",
             location: form.location,
-            collar: form.collar,
-            output_language: form.collar === "blue" ? "ar" : "en",
             purpose: form.purpose,
             tasks: form.tasksAndResponsibilities,
             responsibilities: form.tasksAndResponsibilities,
@@ -279,6 +268,9 @@ function SubmitPage() {
               <Languages className="w-4 h-4" />
               {lang === "ar" ? "English" : "العربية"}
             </Button>
+            <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary">
+              {t.pastRequests}
+            </Link>
           </div>
         </div>
 
@@ -352,20 +344,10 @@ function SubmitPage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={t.collar} required>
-                <Select value={form.collar} onValueChange={(v) => update("collar", v)}>
-                  <SelectTrigger><SelectValue placeholder={t.collarPh} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="white">{t.collarWhite}</SelectItem>
-                    <SelectItem value="blue">{t.collarBlue}</SelectItem>
-                  </SelectContent>
-                </Select>
+              <Field label={t.reportsTo} required>
+                <Input value={form.reportsTo} onChange={(e) => update("reportsTo", e.target.value)} placeholder={t.reportsToPh} maxLength={150} />
               </Field>
             </div>
-
-            <Field label={t.reportsTo} required>
-              <Input value={form.reportsTo} onChange={(e) => update("reportsTo", e.target.value)} placeholder={t.reportsToPh} maxLength={150} />
-            </Field>
 
             <Field label={t.directReports}>
               <Textarea value={form.directReports} onChange={(e) => update("directReports", e.target.value)} placeholder={t.directReportsPh} rows={3} maxLength={2000} />
@@ -434,7 +416,7 @@ function SubmitPage() {
                 <Textarea value={form.kpis} onChange={(e) => update("kpis", e.target.value)} placeholder={t.kpisPh} rows={3} maxLength={1500} />
               </Field>
 
-              <Field label={t.notes}>
+              <Field label={t.notes} required>
                 <Textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} placeholder={t.notesPh} rows={2} maxLength={1000} />
               </Field>
             </div>

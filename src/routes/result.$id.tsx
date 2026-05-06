@@ -126,6 +126,9 @@ function ResultPage() {
             <ArrowRight className="w-4 h-4" />
             الرئيسية
           </Link>
+          <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary">
+            كل الطلبات
+          </Link>
         </div>
 
         <Card className="bg-gradient-card p-6 md:p-8 shadow-elevated mb-6">
