@@ -303,6 +303,16 @@ function SubmitPage() {
 
         <Card className="bg-gradient-card p-6 md:p-8 shadow-soft">
           <form onSubmit={handleSubmit} className="space-y-5">
+            <Field label={t.collar} required>
+              <Select value={collar} onValueChange={(v) => setCollar(v as "white" | "blue")}>
+                <SelectTrigger><SelectValue placeholder={t.collarPh} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="white">{t.whiteCollar}</SelectItem>
+                  <SelectItem value="blue">{t.blueCollar}</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+
             {/* Sector / Department / Position cascading */}
             <div className="grid md:grid-cols-2 gap-4">
               <Field label={t.sector} required>
