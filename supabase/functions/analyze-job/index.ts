@@ -226,7 +226,7 @@ CRITICAL RULES:
       body: JSON.stringify({
         model: "google/gemini-2.5-pro",
         messages: [
-          { role: "system", content: "You are an expert HR consultant. Always call the provided tool with thorough, professional English content." },
+          { role: "system", content: `You are an expert HR consultant. Always call the provided tool with thorough, professional content. ${outputLang === "ar" ? "Output language: Arabic (العربية)." : "Output language: English."}` },
           { role: "user", content: userPrompt },
         ],
         tools: [{
