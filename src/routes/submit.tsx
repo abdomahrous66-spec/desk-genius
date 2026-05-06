@@ -158,6 +158,7 @@ function SubmitPage() {
   const [position, setPosition] = useState("");
   const [newPositionTitle, setNewPositionTitle] = useState("");
   const [approvedBy, setApprovedBy] = useState("");
+  const [collar, setCollar] = useState<"white" | "blue" | "">("");
 
   const sectors = useMemo(() => Object.keys(POSITIONS).sort(), []);
   const departments = useMemo(
