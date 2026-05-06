@@ -201,9 +201,9 @@ function SubmitPage() {
 
     const finalTitle = isNewPosition ? newPositionTitle.trim() : position;
     const required = [
-      sector, department, finalTitle,
+      sector, department, finalTitle, collar,
       form.location, form.reportsTo, form.purpose, form.tasksAndResponsibilities,
-      form.qualifications, form.workingConditions, form.notes,
+      form.qualifications, form.workingConditions,
       form.pd_authority, form.pd_financial, form.pd_annual, form.pd_hiring,
     ];
     if (required.some(v => !v.trim()) || (isNewPosition && !approvedBy.trim())) {
