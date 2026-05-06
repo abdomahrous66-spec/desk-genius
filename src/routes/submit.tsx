@@ -228,6 +228,8 @@ function SubmitPage() {
             department,
             position_source: isNewPosition ? "new" : "existing",
             approved_by: isNewPosition ? approvedBy : "",
+            collar,
+            output_language: collar === "blue" ? "ar" : "en",
             location: form.location,
             purpose: form.purpose,
             tasks: form.tasksAndResponsibilities,
