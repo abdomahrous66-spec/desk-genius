@@ -229,6 +229,8 @@ function SubmitPage() {
             position_source: isNewPosition ? "new" : "existing",
             approved_by: isNewPosition ? approvedBy : "",
             location: form.location,
+            collar: form.collar,
+            output_language: form.collar === "blue" ? "ar" : "en",
             purpose: form.purpose,
             tasks: form.tasksAndResponsibilities,
             responsibilities: form.tasksAndResponsibilities,
