@@ -3,7 +3,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Plus, Loader2, FileText } from "lucide-react";
+import { ArrowRight, Plus, Loader2, FileText, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -21,6 +26,7 @@ type Row = {
 function Dashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -34,6 +40,18 @@ function Dashboard() {
     };
     fetch();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    const { error } = await supabase.from("job_analyses").delete().eq("id", id);
+    setDeletingId(null);
+    if (error) {
+      toast.error("فشل الحذف، حاول تاني");
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    toast.success("تم الحذف");
+  };
 
   return (
     <div className="min-h-screen py-8 md:py-12">
@@ -53,7 +71,7 @@ function Dashboard() {
 
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">الطلبات السابقة</h1>
-          <p className="text-muted-foreground">كل تحليلات الوظائف اللي اتعملت</p>
+          <p className="text-muted-foreground">كل تحليلات الوظائف اللي اتعملت — تقدر تحذف اللي مش محتاجه</p>
         </div>
 
         {loading ? (
@@ -72,21 +90,41 @@ function Dashboard() {
         ) : (
           <div className="space-y-3">
             {rows.map((r) => (
-              <Link key={r.id} to="/result/$id" params={{ id: r.id }}>
-                <Card className="bg-gradient-card p-5 shadow-soft hover:shadow-elevated transition-all duration-200 hover:border-primary/40 cursor-pointer">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-lg truncate">{r.job_title}</h3>
-                      <div className="text-sm text-muted-foreground mt-1 space-x-2 space-x-reverse">
-                        {r.department && <span>{r.department}</span>}
-                        {r.manager_name && <span>· {r.manager_name}</span>}
-                        <span>· {new Date(r.created_at).toLocaleDateString("ar-EG")}</span>
-                      </div>
+              <Card key={r.id} className="bg-gradient-card p-5 shadow-soft hover:shadow-elevated transition-all duration-200 hover:border-primary/40">
+                <div className="flex items-center justify-between gap-4">
+                  <Link to="/result/$id" params={{ id: r.id }} className="min-w-0 flex-1 cursor-pointer">
+                    <h3 className="font-bold text-lg truncate">{r.job_title}</h3>
+                    <div className="text-sm text-muted-foreground mt-1 space-x-2 space-x-reverse">
+                      {r.department && <span>{r.department}</span>}
+                      <span>· {new Date(r.created_at).toLocaleDateString("ar-EG")}</span>
                     </div>
+                  </Link>
+                  <div className="flex items-center gap-2">
                     <Status status={r.status} />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" disabled={deletingId === r.id}>
+                          {deletingId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent dir="rtl">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            هتحذف تحليل وظيفة "{r.job_title}" نهائياً. مش هتقدر ترجعه تاني.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            حذف
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
-                </Card>
-              </Link>
+                </div>
+              </Card>
             ))}
           </div>
         )}
