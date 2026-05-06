@@ -355,10 +355,20 @@ function SubmitPage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={t.reportsTo} required>
-                <Input value={form.reportsTo} onChange={(e) => update("reportsTo", e.target.value)} placeholder={t.reportsToPh} maxLength={150} />
+              <Field label={t.collar} required>
+                <Select value={form.collar} onValueChange={(v) => update("collar", v)}>
+                  <SelectTrigger><SelectValue placeholder={t.collarPh} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="white">{t.collarWhite}</SelectItem>
+                    <SelectItem value="blue">{t.collarBlue}</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
             </div>
+
+            <Field label={t.reportsTo} required>
+              <Input value={form.reportsTo} onChange={(e) => update("reportsTo", e.target.value)} placeholder={t.reportsToPh} maxLength={150} />
+            </Field>
 
             <Field label={t.directReports}>
               <Textarea value={form.directReports} onChange={(e) => update("directReports", e.target.value)} placeholder={t.directReportsPh} rows={3} maxLength={2000} />
