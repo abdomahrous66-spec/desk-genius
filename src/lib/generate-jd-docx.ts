@@ -415,6 +415,31 @@ export async function generateJDDocx(data: JDData) {
     ],
   }));
 
+  // Signatures
+  const sigCell = (label: string) => new TableCell({
+    width: { size: 4680, type: WidthType.DXA },
+    margins: { top: 200, bottom: 200, left: 160, right: 160 },
+    children: [
+      new Paragraph({ children: [txt(label, { bold: true })], spacing: { after: 600 } }),
+      new Paragraph({ children: [txt("Name: ____________________________")], spacing: { after: 120 } }),
+      new Paragraph({ children: [txt("Signature: _______________________")], spacing: { after: 120 } }),
+      new Paragraph({ children: [txt("Date: ____________________________")] }),
+    ],
+  });
+  children.push(new Paragraph({ children: [txt("")], spacing: { before: 240 } }));
+  children.push(new Table({
+    width: { size: TOTAL, type: WidthType.DXA },
+    columnWidths: [4680, 4680],
+    rows: [
+      new TableRow({ children: [
+        new TableCell({ width: { size: 4680, type: WidthType.DXA }, children: [new Paragraph({ children: [txt("Employee", { bold: true, color: "FFFFFF" })] })], shading: { fill: HEADER_FILL, type: "clear" as never } }),
+        new TableCell({ width: { size: 4680, type: WidthType.DXA }, children: [new Paragraph({ children: [txt("Direct Manager", { bold: true, color: "FFFFFF" })] })], shading: { fill: HEADER_FILL, type: "clear" as never } }),
+      ] }),
+      new TableRow({ children: [sigCell("Employee Acknowledgement"), sigCell("Manager Approval")] }),
+    ],
+  }));
+
+
   const doc = new Document({
     styles: { default: { document: { run: { font: "Calibri", size: 22 } } } },
     sections: [{
