@@ -7,8 +7,10 @@ import { Loader2, ArrowRight, Copy, Download, FileText, Sparkles, AlertCircle } 
 import { toast } from "sonner";
 import { generateJDDocx, type JDData } from "@/lib/generate-jd-docx";
 
+import { RequireAuth } from "@/components/RequireAuth";
+
 export const Route = createFileRoute("/result/$id")({
-  component: ResultPage,
+  component: () => (<RequireAuth><ResultPage /></RequireAuth>),
 });
 
 type AnalysisRecord = {
