@@ -10,8 +10,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
+import { RequireAuth } from "@/components/RequireAuth";
+
 export const Route = createFileRoute("/dashboard")({
-  component: Dashboard,
+  component: () => (<RequireAuth requireRole="admin"><Dashboard /></RequireAuth>),
 });
 
 type Row = {
