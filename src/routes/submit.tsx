@@ -218,12 +218,15 @@ function SubmitPage() {
 
     setSubmitting(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id ?? null;
       const { data: insertData, error: insertErr } = await supabase
         .from("job_analyses")
         .insert([{
           job_title: finalTitle,
           department: department || null,
           manager_name: null,
+          user_id: userId,
           raw_input: {
             sector,
             department,
