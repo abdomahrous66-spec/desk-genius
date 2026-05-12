@@ -12,9 +12,10 @@ import {
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2 } from "lucide-react";
 import positionsData from "@/data/positions.json";
+import { RequireAuth } from "@/components/RequireAuth";
 
 export const Route = createFileRoute("/submit")({
-  component: SubmitPage,
+  component: () => (<RequireAuth><SubmitPage /></RequireAuth>),
 });
 
 type Lang = "ar" | "en";
