@@ -12,9 +12,10 @@ import {
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2 } from "lucide-react";
 import positionsData from "@/data/positions.json";
+import { RequireAuth } from "@/components/RequireAuth";
 
 export const Route = createFileRoute("/submit")({
-  component: SubmitPage,
+  component: () => (<RequireAuth><SubmitPage /></RequireAuth>),
 });
 
 type Lang = "ar" | "en";
@@ -217,12 +218,15 @@ function SubmitPage() {
 
     setSubmitting(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id ?? null;
       const { data: insertData, error: insertErr } = await supabase
         .from("job_analyses")
         .insert([{
           job_title: finalTitle,
           department: department || null,
           manager_name: null,
+          user_id: userId,
           raw_input: {
             sector,
             department,
