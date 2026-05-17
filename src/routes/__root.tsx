@@ -39,8 +39,8 @@ export const Route = createRootRoute({
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "JD" },
       { name: "twitter:description", content: "Generates job analyses and descriptions from manager input, supporting Arabic and English outputs." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f8865097-151d-4c56-870e-d64584d719d9" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f8865097-151d-4c56-870e-d64584d719d9" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/5358dd9f-e665-4525-96c8-5c201162d5c3" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/5358dd9f-e665-4525-96c8-5c201162d5c3" },
     ],
     links: [
       {
