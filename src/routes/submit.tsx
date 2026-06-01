@@ -61,6 +61,10 @@ const T = {
     collarPh: "اختر نوع الوظيفة",
     blueCollar: "Blue Collar",
     whiteCollar: "White Collar",
+    outputLang: "لغة مخرجات الـ JD *",
+    outputLangPh: "اختر اللغة",
+    outputLangAr: "عربي",
+    outputLangEn: "English",
     kpis: "مؤشرات الأداء (KPIs) — اختياري",
     kpisPh: "اكتب الـ KPIs لو موجودة. لو سيبتها فاضية مش هيظهر جدول KPIs.",
     reportsSection: "التقارير (Reports) *",
@@ -120,6 +124,10 @@ const T = {
     collarPh: "Select collar type",
     blueCollar: "Blue Collar",
     whiteCollar: "White Collar",
+    outputLang: "JD Output Language *",
+    outputLangPh: "Select language",
+    outputLangAr: "Arabic",
+    outputLangEn: "English",
     kpis: "Key Performance Indicators (KPIs) — optional",
     kpisPh: "List KPIs if any. If empty, the KPIs table will not appear.",
     reportsSection: "Reports *",
@@ -160,6 +168,7 @@ function SubmitPage() {
   const [newPositionTitle, setNewPositionTitle] = useState("");
   const [approvedBy, setApprovedBy] = useState("");
   const [collar, setCollar] = useState<"white" | "blue" | "">("");
+  const [outputLang, setOutputLang] = useState<"ar" | "en" | "">("");
 
   const sectors = useMemo(() => Object.keys(POSITIONS).sort(), []);
   const departments = useMemo(
@@ -202,7 +211,7 @@ function SubmitPage() {
 
     const finalTitle = isNewPosition ? newPositionTitle.trim() : position;
     const required = [
-      sector, department, finalTitle, collar,
+      sector, department, finalTitle, collar, outputLang,
       form.location, form.reportsTo, form.purpose, form.tasksAndResponsibilities,
       form.qualifications, form.workingConditions,
       form.pd_authority, form.pd_financial, form.pd_annual, form.pd_hiring,
@@ -233,7 +242,7 @@ function SubmitPage() {
             position_source: isNewPosition ? "new" : "existing",
             approved_by: isNewPosition ? approvedBy : "",
             collar,
-            output_language: collar === "blue" ? "ar" : "en",
+            output_language: outputLang || (collar === "blue" ? "ar" : "en"),
             location: form.location,
             purpose: form.purpose,
             tasks: form.tasksAndResponsibilities,
