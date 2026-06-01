@@ -14,7 +14,6 @@ function lookupComps(title: string) {
   if (!title) return null;
   const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
   const t = norm(title);
-  // exact then contains
   for (const k of Object.keys(COMPS)) {
     if (norm(k) === t) return COMPS[k];
   }
@@ -25,15 +24,31 @@ function lookupComps(title: string) {
   return null;
 }
 
+// Strip JSON-schema fields Gemini doesn't accept
+// deno-lint-ignore no-explicit-any
+function cleanSchema(s: any): any {
+  if (Array.isArray(s)) return s.map(cleanSchema);
+  if (s && typeof s === "object") {
+    // deno-lint-ignore no-explicit-any
+    const out: any = {};
+    for (const [k, v] of Object.entries(s)) {
+      if (k === "additionalProperties") continue;
+      out[k] = cleanSchema(v);
+    }
+    return out;
+  }
+  return s;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { analysisId } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GEMINI_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+    if (!GEMINI_KEY) throw new Error("GOOGLE_GEMINI_API_KEY missing");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: record, error: fetchErr } = await supabase
@@ -51,6 +66,7 @@ serve(async (req) => {
 
     const pdInput = (input.position_dimensions_input as Record<string, string>) || {};
     const reportsInput = (input.reports_input as Array<Record<string, string>>) || [];
+    const outputLang = (input.output_language as string) || "en";
 
     const jdSchema = {
       type: "object",
@@ -76,7 +92,6 @@ serve(async (req) => {
               kras: { type: "array", items: { type: "string" } },
             },
             required: ["area", "responsibilities", "kras"],
-            additionalProperties: false,
           },
         },
         hse_kra: {
@@ -86,7 +101,6 @@ serve(async (req) => {
             kras: { type: "array", items: { type: "string" } },
           },
           required: ["responsibilities", "kras"],
-          additionalProperties: false,
         },
         internal_communication: { type: "array", items: { type: "string" } },
         external_communication: { type: "array", items: { type: "string" } },
@@ -98,7 +112,6 @@ serve(async (req) => {
             days_off: { type: "string" }, working_hours: { type: "string" },
           },
           required: ["indoor", "outdoor", "working_hazards", "working_days", "days_off", "working_hours"],
-          additionalProperties: false,
         },
         reports: {
           type: "array",
@@ -109,7 +122,6 @@ serve(async (req) => {
               report_purpose: { type: "string" }, presented_to: { type: "string" },
             },
             required: ["report_name", "frequency", "report_purpose", "presented_to"],
-            additionalProperties: false,
           },
         },
         reporting_structure: { type: "string" },
@@ -118,7 +130,7 @@ serve(async (req) => {
           items: {
             type: "object",
             properties: { kpi: { type: "string" }, measurement: { type: "string" }, target: { type: "string" } },
-            required: ["kpi", "measurement", "target"], additionalProperties: false,
+            required: ["kpi", "measurement", "target"],
           },
         },
         position_dimensions: {
@@ -130,7 +142,6 @@ serve(async (req) => {
             hiring_promotion_authority: { type: "array", items: { type: "string" } },
           },
           required: ["level_of_authority", "financial_control", "annual_amount", "hiring_promotion_authority"],
-          additionalProperties: false,
         },
         qualifications: {
           type: "object",
@@ -144,7 +155,6 @@ serve(async (req) => {
             leadership_competencies: { type: "array", items: { type: "string" } },
           },
           required: ["education", "experience", "computer_skills", "language_skills", "core_competencies", "functional_competencies", "leadership_competencies"],
-          additionalProperties: false,
         },
         structure_boxes: {
           type: "object",
@@ -153,7 +163,6 @@ serve(async (req) => {
             subordinates: { type: "array", items: { type: "string" } },
           },
           required: ["manager", "position", "subordinates"],
-          additionalProperties: false,
         },
       },
       required: [
@@ -164,12 +173,23 @@ serve(async (req) => {
         "work_environment", "reports", "position_dimensions", "qualifications",
         "reporting_structure", "kpis", "structure_boxes",
       ],
-      additionalProperties: false,
     };
 
-    const today = new Date().toISOString().slice(0, 10);
+    const outerSchema = cleanSchema({
+      type: "object",
+      properties: {
+        analysis_markdown: { type: "string" },
+        jd: jdSchema,
+      },
+      required: ["analysis_markdown", "jd"],
+    });
 
-    const userPrompt = `You are an expert HR consultant. The manager submitted information about a job. Fill any missing professional details with industry-standard content. OUTPUT LANGUAGE: ${input.output_language === "ar" ? "Arabic (Modern Standard, professional)" : "English (professional)"}.
+    const today = new Date().toISOString().slice(0, 10);
+    const langInstr = outputLang === "ar"
+      ? "Modern Standard Arabic (professional, formal)"
+      : "Professional English";
+
+    const userPrompt = `You are an expert HR consultant for Nahdet Misr Publishing Group. Fill any missing professional details with industry-standard content. OUTPUT LANGUAGE for both analysis_markdown and jd content: ${langInstr}.
 
 Manager input:
 - Job Title: ${record.job_title}
@@ -198,71 +218,72 @@ ${compHint}
 
 Today: ${today}
 
-Call "save_job_outputs" with:
-1) "analysis_markdown": Full English Job Analysis markdown.
-2) "jd": Full Job Description matching schema.
+Return a JSON object with exactly two fields:
+1) "analysis_markdown": Full Job Analysis as markdown text in ${langInstr}.
+2) "jd": Job Description object matching the schema.
 
 CRITICAL RULES:
 - "location": exactly "${input.location || "Borg"}".
-- "reports": use the EXACT manager-provided list above. If a row's name is "N/A", omit it. Do not invent additional reports.
-- "position_dimensions": use the manager-provided values above (split into bullet arrays). If value is "N/A" return ["N/A"].
-- "structure_boxes": ALWAYS populate. manager = Reports-To title, position = job title, subordinates = list (infer if not given for managerial roles).
-- "reporting_structure": text backup.
+- "reports": use the EXACT manager-provided list. Skip rows whose name is "N/A". Do not invent extra rows.
+- "position_dimensions": use the manager-provided values (split into bullet arrays). If value is "N/A" return ["N/A"].
+- "structure_boxes": ALWAYS populate. manager = Reports-To title, position = job title, subordinates = list.
 - "key_result_areas": 5-8 KRAs (each 4-8 responsibilities, 3-6 KRAs).
-- "hse_kra": MANDATORY. Auto-generate Health, Safety & Environment as a KRA-style block (4-7 responsibilities + 3-5 KRAs) covering compliance with HSE policy, PPE, training, incident reporting, ergonomics, environmental practices. This will be appended to KRAs in the document.
-- Competencies: use MATCHED names exactly when provided. Three arrays: core_competencies, functional_competencies, leadership_competencies (NAMES ONLY, no indicators).
+- "hse_kra": MANDATORY. Health/Safety/Environment block (4-7 responsibilities + 3-5 KRAs).
+- Competencies: use MATCHED names exactly when provided. NAMES ONLY, no indicators.
 - "kpis": only if manager provided; else [].
 - last_update = today. version_number = "1.0". type_of_employment = "Full-Time".
-- All output in ${input.output_language === "ar" ? "professional Modern Standard Arabic (Blue Collar role)" : "professional English (White Collar role)"}.`;
+- ALL text content in ${langInstr}.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+
+    const aiResponse = await fetch(geminiUrl, {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: "You are an expert HR consultant. Always call the provided tool with thorough, professional English content." },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "save_job_outputs",
-            description: "Save Job Analysis markdown and structured Job Description.",
-            parameters: {
-              type: "object",
-              properties: { analysis_markdown: { type: "string" }, jd: jdSchema },
-              required: ["analysis_markdown", "jd"],
-              additionalProperties: false,
-            },
-          },
-        }],
-        tool_choice: { type: "function", function: { name: "save_job_outputs" } },
+        system_instruction: {
+          parts: [{ text: "You are an expert HR consultant. Always return a complete, valid JSON object matching the requested schema with thorough professional content." }],
+        },
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+        generationConfig: {
+          response_mime_type: "application/json",
+          response_schema: outerSchema,
+          temperature: 0.4,
+        },
       }),
     });
 
     if (!aiResponse.ok) {
       const t = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, t);
+      console.error("Gemini API error:", aiResponse.status, t);
       const status = aiResponse.status;
-      const msg = status === 429 ? "Rate limit exceeded" : status === 402 ? "AI credits exhausted" : "AI gateway error";
+      const msg = status === 429 ? "Gemini rate limit — try again in a minute"
+        : status === 403 ? "Invalid Gemini API key or access denied"
+        : "Gemini API error";
       await supabase.from("job_analyses").update({ status: "error", analysis_result: msg }).eq("id", analysisId);
-      return new Response(JSON.stringify({ error: msg }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: msg, detail: t }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) throw new Error("AI did not return tool call");
+    const text = aiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("Gemini returned no content");
 
-    const args = JSON.parse(toolCall.function.arguments);
-    const analysisMarkdown: string = args.analysis_markdown;
-    const jd = args.jd;
+    let parsed: { analysis_markdown: string; jd: Record<string, unknown> };
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      // Sometimes Gemini wraps JSON in ```json fences
+      const clean = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+      parsed = JSON.parse(clean);
+    }
 
-    // Merge HSE into key_result_areas as a final block
+    const analysisMarkdown: string = parsed.analysis_markdown;
+    // deno-lint-ignore no-explicit-any
+    const jd: any = parsed.jd;
+
     if (jd.hse_kra && (jd.hse_kra.responsibilities?.length || jd.hse_kra.kras?.length)) {
       jd.key_result_areas = jd.key_result_areas || [];
       jd.key_result_areas.push({
-        area: "Health, Safety & Environment (HSE)",
+        area: outputLang === "ar" ? "الصحة والسلامة والبيئة (HSE)" : "Health, Safety & Environment (HSE)",
         responsibilities: jd.hse_kra.responsibilities || [],
         kras: jd.hse_kra.kras || [],
       });
