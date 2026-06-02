@@ -34,6 +34,9 @@ function ResultPage() {
   const [editing, setEditing] = useState(false);
   const [editJD, setEditJD] = useState<JDData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editingAnalysis, setEditingAnalysis] = useState(false);
+  const [editAnalysis, setEditAnalysis] = useState("");
+  const [savingAnalysis, setSavingAnalysis] = useState(false);
 
   useEffect(() => {
     let active = true;
