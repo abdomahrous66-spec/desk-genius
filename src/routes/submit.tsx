@@ -164,23 +164,33 @@ interface ReportRow { name: string; frequency: string; purpose: string; presente
 
 function SubmitPage() {
   const navigate = useNavigate();
+  const prefill = Route.useSearch();
+  const { isAllowed } = useScopes();
   const [submitting, setSubmitting] = useState(false);
   const [lang, setLang] = useState<Lang>("ar");
   const t = T[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
 
-  const [sector, setSector] = useState("");
-  const [department, setDepartment] = useState("");
-  const [position, setPosition] = useState("");
+  const [sector, setSector] = useState(prefill.sector || "");
+  const [department, setDepartment] = useState(prefill.department || "");
+  const [position, setPosition] = useState(prefill.position || "");
   const [newPositionTitle, setNewPositionTitle] = useState("");
   const [approvedBy, setApprovedBy] = useState("");
   const [collar, setCollar] = useState<"white" | "blue" | "">("");
   const [outputLang, setOutputLang] = useState<"ar" | "en" | "">("");
 
-  const sectors = useMemo(() => Object.keys(POSITIONS).sort(), []);
+  const sectors = useMemo(
+    () => Object.keys(POSITIONS).filter(s => isAllowed(s)).sort(),
+    [isAllowed]
+  );
   const departments = useMemo(
-    () => (sector && POSITIONS[sector] ? Object.keys(POSITIONS[sector]).filter(d => d && d !== "-").sort() : []),
-    [sector]
+    () => (sector && POSITIONS[sector]
+      ? Object.keys(POSITIONS[sector])
+          .filter(d => d && d !== "-")
+          .filter(d => isAllowed(sector, d))
+          .sort()
+      : []),
+    [sector, isAllowed]
   );
   const positionsList = useMemo(
     () => (sector && department && POSITIONS[sector]?.[department]) ? POSITIONS[sector][department] : [],
@@ -188,7 +198,12 @@ function SubmitPage() {
   );
   const isNewPosition = position === NEW_POSITION;
 
+  // Upload + AI parse
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [parsing, setParsing] = useState(false);
+
   const [form, setForm] = useState({
+
     location: "",
     purpose: "",
     tasksAndResponsibilities: "",
