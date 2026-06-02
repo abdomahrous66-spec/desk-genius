@@ -240,7 +240,7 @@ function ResultPage() {
         {record.status === "completed" && record.analysis_result && (
           <>
             <div className="flex flex-wrap gap-2 mb-4 justify-end">
-              {!editing ? (
+              {!editing && !editingAnalysis ? (
                 <>
                   <Button onClick={copy} variant="outline" size="sm">
                     <Copy className="w-4 h-4 ml-1.5" />
@@ -250,6 +250,10 @@ function ResultPage() {
                     <Download className="w-4 h-4 ml-1.5" />
                     تحميل التحليل (MD)
                   </Button>
+                  <Button onClick={startEditAnalysis} variant="outline" size="sm">
+                    <Pencil className="w-4 h-4 ml-1.5" />
+                    تعديل التحليل
+                  </Button>
                   <Button onClick={startEdit} variant="outline" size="sm" disabled={!record.jd_data}>
                     <Pencil className="w-4 h-4 ml-1.5" />
                     تعديل الـ JD
@@ -257,6 +261,16 @@ function ResultPage() {
                   <Button onClick={downloadJD} size="sm" className="bg-primary text-primary-foreground" disabled={!record.jd_data}>
                     <FileText className="w-4 h-4 ml-1.5" />
                     تحميل Job Description (Word)
+                  </Button>
+                </>
+              ) : editingAnalysis ? (
+                <>
+                  <Button onClick={cancelEditAnalysis} variant="outline" size="sm" disabled={savingAnalysis}>
+                    <X className="w-4 h-4 ml-1.5" /> إلغاء
+                  </Button>
+                  <Button onClick={saveEditAnalysis} size="sm" className="bg-primary text-primary-foreground" disabled={savingAnalysis}>
+                    {savingAnalysis ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Save className="w-4 h-4 ml-1.5" />}
+                    حفظ التحليل
                   </Button>
                 </>
               ) : (
@@ -274,6 +288,17 @@ function ResultPage() {
 
             {editing && editJD ? (
               <JDEditor jd={editJD} onChange={setEditJD} />
+            ) : editingAnalysis ? (
+              <Card className="bg-card p-4 md:p-6 shadow-elevated">
+                <p className="text-sm text-muted-foreground mb-3">عدّل النص (Markdown) — استخدم # للعناوين و - للقوائم.</p>
+                <Textarea
+                  value={editAnalysis}
+                  onChange={(e) => setEditAnalysis(e.target.value)}
+                  rows={30}
+                  className="font-mono text-sm leading-relaxed"
+                  dir="auto"
+                />
+              </Card>
             ) : (
               <Card className="bg-card p-6 md:p-10 shadow-elevated">
                 <article className="ltr-content prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h1:mb-6 prose-h1:pb-3 prose-h1:border-b prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-primary prose-p:leading-relaxed prose-li:my-1">
