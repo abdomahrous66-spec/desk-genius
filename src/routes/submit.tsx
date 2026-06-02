@@ -407,6 +407,26 @@ function SubmitPage() {
           <p className="text-muted-foreground">{t.subtitle}</p>
         </div>
 
+        <Card className="p-4 mb-6 bg-primary/5 border-primary/20">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-2 text-sm">
+              <Wand2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold">ارفع ملف وخلي الـ AI يملأ الفورم بدالك</div>
+                <p className="text-xs text-muted-foreground">يدعم ملفات نصية (.txt) — راجع البيانات بعد التعبئة قبل الإرسال.</p>
+              </div>
+            </div>
+            <div>
+              <input ref={fileInputRef} type="file" accept=".txt,.md,.csv,.json,.docx,.pdf" onChange={handleFile} className="hidden" />
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={parsing} className="gap-1.5">
+                {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {parsing ? "جاري التحليل..." : "رفع ملف"}
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+
         <Card className="p-3 mb-6 bg-accent/10 border-accent/30">
           <div className="flex gap-2 text-sm">
             <Info className="w-5 h-5 text-accent-foreground shrink-0 mt-0.5" />
