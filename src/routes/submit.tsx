@@ -250,21 +250,26 @@ function SubmitPage() {
         toast.error("فشل قراءة الملف بالـ AI"); return;
       }
       const d = (data as { data: Record<string, string> }).data || {};
-      if (d.job_title && !position) {
-        // try to match existing position
-        const found = Object.entries(POSITIONS).find(([sec, depts]) =>
-          Object.entries(depts).some(([dep, list]) => list.some(p => p.toLowerCase() === String(d.job_title).toLowerCase()) && (() => {
-            setSector(sec); setDepartment(dep === "-" ? "" : dep);
-            return true;
-          })())
-        );
-        if (!found) {
+      const title = String(d.job_title || "").trim();
+      if (title && !position) {
+        let matched = false;
+        outer: for (const [sec, depts] of Object.entries(POSITIONS)) {
+          for (const [dep, list] of Object.entries(depts)) {
+            if (list.some(p => p.toLowerCase() === title.toLowerCase())) {
+              setSector(sec);
+              setDepartment(dep === "-" ? "" : dep);
+              setPosition(title);
+              matched = true;
+              break outer;
+            }
+          }
+        }
+        if (!matched) {
           setPosition(NEW_POSITION);
-          setNewPositionTitle(String(d.job_title));
-        } else {
-          setPosition(String(d.job_title));
+          setNewPositionTitle(title);
         }
       }
+
       setForm(f => ({
         ...f,
         location: d.location || f.location,
