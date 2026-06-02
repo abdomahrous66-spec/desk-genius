@@ -134,6 +134,35 @@ function ResultPage() {
     toast.success("تم حفظ التعديلات");
   };
 
+  const startEditAnalysis = () => {
+    if (!record?.analysis_result) return;
+    setEditAnalysis(record.analysis_result);
+    setEditingAnalysis(true);
+  };
+
+  const cancelEditAnalysis = () => {
+    setEditingAnalysis(false);
+    setEditAnalysis("");
+  };
+
+  const saveEditAnalysis = async () => {
+    if (!record) return;
+    setSavingAnalysis(true);
+    const { error } = await supabase
+      .from("job_analyses")
+      .update({ analysis_result: editAnalysis, updated_at: new Date().toISOString() })
+      .eq("id", record.id);
+    setSavingAnalysis(false);
+    if (error) {
+      console.error(error);
+      toast.error("فشل حفظ التعديلات");
+      return;
+    }
+    setRecord({ ...record, analysis_result: editAnalysis });
+    setEditingAnalysis(false);
+    toast.success("تم حفظ التحليل");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
