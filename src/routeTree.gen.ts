@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SubmitRouteImport } from './routes/submit'
+import { Route as StructureRouteImport } from './routes/structure'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -24,6 +25,11 @@ const UsersRoute = UsersRouteImport.update({
 const SubmitRoute = SubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StructureRoute = StructureRouteImport.update({
+  id: '/structure',
+  path: '/structure',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/structure': typeof StructureRoute
   '/submit': typeof SubmitRoute
   '/users': typeof UsersRoute
   '/result/$id': typeof ResultIdRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/structure': typeof StructureRoute
   '/submit': typeof SubmitRoute
   '/users': typeof UsersRoute
   '/result/$id': typeof ResultIdRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/structure': typeof StructureRoute
   '/submit': typeof SubmitRoute
   '/users': typeof UsersRoute
   '/result/$id': typeof ResultIdRoute
@@ -78,16 +87,25 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/login'
+    | '/structure'
     | '/submit'
     | '/users'
     | '/result/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/login' | '/submit' | '/users' | '/result/$id'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/structure'
+    | '/submit'
+    | '/users'
+    | '/result/$id'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
     | '/login'
+    | '/structure'
     | '/submit'
     | '/users'
     | '/result/$id'
@@ -97,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  StructureRoute: typeof StructureRoute
   SubmitRoute: typeof SubmitRoute
   UsersRoute: typeof UsersRoute
   ResultIdRoute: typeof ResultIdRoute
@@ -116,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/submit'
       fullPath: '/submit'
       preLoaderRoute: typeof SubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/structure': {
+      id: '/structure'
+      path: '/structure'
+      fullPath: '/structure'
+      preLoaderRoute: typeof StructureRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -153,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  StructureRoute: StructureRoute,
   SubmitRoute: SubmitRoute,
   UsersRoute: UsersRoute,
   ResultIdRoute: ResultIdRoute,

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,17 +10,24 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2, Upload, Wand2 } from "lucide-react";
 import positionsData from "@/data/positions.json";
 import { RequireAuth } from "@/components/RequireAuth";
+import { useScopes } from "@/hooks/use-scopes";
 
 export const Route = createFileRoute("/submit")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    sector: typeof s.sector === "string" ? s.sector : "",
+    department: typeof s.department === "string" ? s.department : "",
+    position: typeof s.position === "string" ? s.position : "",
+  }),
   component: () => (<RequireAuth><SubmitPage /></RequireAuth>),
 });
 
 type Lang = "ar" | "en";
 const POSITIONS = positionsData as Record<string, Record<string, string[]>>;
 const NEW_POSITION = "__NEW__";
+
 
 const T = {
   ar: {
