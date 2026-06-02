@@ -228,6 +228,79 @@ function SubmitPage() {
   const updateReport = (i: number, k: keyof ReportRow, v: string) =>
     setReports(reports.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
 
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("الملف أكبر من 5MB"); return; }
+    setParsing(true);
+    try {
+      let text = "";
+      if (file.type.startsWith("text/") || /\.(txt|md|csv|json)$/i.test(file.name)) {
+        text = await file.text();
+      } else {
+        // For docx/pdf: extract readable runs by stripping non-text bytes (best-effort fallback).
+        const buf = await file.arrayBuffer();
+        const raw = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+        text = raw.replace(/[\x00-\x08\x0E-\x1F]/g, " ").replace(/\s+/g, " ");
+      }
+      if (text.trim().length < 20) { toast.error("الملف فاضي أو غير مدعوم — جرب ملف نصي (.txt) أو الصق المحتوى يدوياً"); return; }
+
+      const { data, error } = await supabase.functions.invoke("parse-job-doc", { body: { text } });
+      if (error || (data as { error?: string })?.error) {
+        toast.error("فشل قراءة الملف بالـ AI"); return;
+      }
+      const d = (data as { data: Record<string, string> }).data || {};
+      if (d.job_title && !position) {
+        // try to match existing position
+        const found = Object.entries(POSITIONS).find(([sec, depts]) =>
+          Object.entries(depts).some(([dep, list]) => list.some(p => p.toLowerCase() === String(d.job_title).toLowerCase()) && (() => {
+            setSector(sec); setDepartment(dep === "-" ? "" : dep);
+            return true;
+          })())
+        );
+        if (!found) {
+          setPosition(NEW_POSITION);
+          setNewPositionTitle(String(d.job_title));
+        } else {
+          setPosition(String(d.job_title));
+        }
+      }
+      setForm(f => ({
+        ...f,
+        location: d.location || f.location,
+        purpose: d.purpose || f.purpose,
+        tasksAndResponsibilities: d.tasks || f.tasksAndResponsibilities,
+        qualifications: d.qualifications || f.qualifications,
+        workingConditions: d.workingConditions || f.workingConditions,
+        reportsTo: d.reportsTo || f.reportsTo,
+        directReports: d.directReports || f.directReports,
+        kpis: d.kpis || f.kpis,
+        notes: d.notes || f.notes,
+        pd_authority: d.pd_authority || f.pd_authority || "N/A",
+        pd_financial: d.pd_financial || f.pd_financial || "N/A",
+        pd_annual: d.pd_annual || f.pd_annual || "N/A",
+        pd_hiring: d.pd_hiring || f.pd_hiring || "N/A",
+      }));
+      const parsedReports = (data as { data: { reports?: ReportRow[] } }).data?.reports;
+      if (parsedReports && parsedReports.length > 0) {
+        setReports(parsedReports.map(r => ({
+          name: r.name || "",
+          frequency: r.frequency || "",
+          purpose: r.purpose || "",
+          presented_to: r.presented_to || "",
+        })));
+      }
+      toast.success("تم استخراج البيانات — راجعها قبل الإرسال");
+    } catch (err) {
+      console.error(err);
+      toast.error("حصلت مشكلة أثناء قراءة الملف");
+    } finally {
+      setParsing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
