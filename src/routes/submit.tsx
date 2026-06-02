@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,17 +10,24 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2, Upload, Wand2 } from "lucide-react";
 import positionsData from "@/data/positions.json";
 import { RequireAuth } from "@/components/RequireAuth";
+import { useScopes } from "@/hooks/use-scopes";
 
 export const Route = createFileRoute("/submit")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    sector: typeof s.sector === "string" ? s.sector : "",
+    department: typeof s.department === "string" ? s.department : "",
+    position: typeof s.position === "string" ? s.position : "",
+  }),
   component: () => (<RequireAuth><SubmitPage /></RequireAuth>),
 });
 
 type Lang = "ar" | "en";
 const POSITIONS = positionsData as Record<string, Record<string, string[]>>;
 const NEW_POSITION = "__NEW__";
+
 
 const T = {
   ar: {
@@ -157,23 +164,33 @@ interface ReportRow { name: string; frequency: string; purpose: string; presente
 
 function SubmitPage() {
   const navigate = useNavigate();
+  const prefill = Route.useSearch();
+  const { isAllowed } = useScopes();
   const [submitting, setSubmitting] = useState(false);
   const [lang, setLang] = useState<Lang>("ar");
   const t = T[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
 
-  const [sector, setSector] = useState("");
-  const [department, setDepartment] = useState("");
-  const [position, setPosition] = useState("");
+  const [sector, setSector] = useState(prefill.sector || "");
+  const [department, setDepartment] = useState(prefill.department || "");
+  const [position, setPosition] = useState(prefill.position || "");
   const [newPositionTitle, setNewPositionTitle] = useState("");
   const [approvedBy, setApprovedBy] = useState("");
   const [collar, setCollar] = useState<"white" | "blue" | "">("");
   const [outputLang, setOutputLang] = useState<"ar" | "en" | "">("");
 
-  const sectors = useMemo(() => Object.keys(POSITIONS).sort(), []);
+  const sectors = useMemo(
+    () => Object.keys(POSITIONS).filter(s => isAllowed(s)).sort(),
+    [isAllowed]
+  );
   const departments = useMemo(
-    () => (sector && POSITIONS[sector] ? Object.keys(POSITIONS[sector]).filter(d => d && d !== "-").sort() : []),
-    [sector]
+    () => (sector && POSITIONS[sector]
+      ? Object.keys(POSITIONS[sector])
+          .filter(d => d && d !== "-")
+          .filter(d => isAllowed(sector, d))
+          .sort()
+      : []),
+    [sector, isAllowed]
   );
   const positionsList = useMemo(
     () => (sector && department && POSITIONS[sector]?.[department]) ? POSITIONS[sector][department] : [],
@@ -181,7 +198,12 @@ function SubmitPage() {
   );
   const isNewPosition = position === NEW_POSITION;
 
+  // Upload + AI parse
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [parsing, setParsing] = useState(false);
+
   const [form, setForm] = useState({
+
     location: "",
     purpose: "",
     tasksAndResponsibilities: "",
@@ -205,6 +227,84 @@ function SubmitPage() {
   const removeReport = (i: number) => setReports(reports.filter((_, idx) => idx !== i));
   const updateReport = (i: number, k: keyof ReportRow, v: string) =>
     setReports(reports.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("الملف أكبر من 5MB"); return; }
+    setParsing(true);
+    try {
+      let text = "";
+      if (file.type.startsWith("text/") || /\.(txt|md|csv|json)$/i.test(file.name)) {
+        text = await file.text();
+      } else {
+        // For docx/pdf: extract readable runs by stripping non-text bytes (best-effort fallback).
+        const buf = await file.arrayBuffer();
+        const raw = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+        text = raw.replace(/[\x00-\x08\x0E-\x1F]/g, " ").replace(/\s+/g, " ");
+      }
+      if (text.trim().length < 20) { toast.error("الملف فاضي أو غير مدعوم — جرب ملف نصي (.txt) أو الصق المحتوى يدوياً"); return; }
+
+      const { data, error } = await supabase.functions.invoke("parse-job-doc", { body: { text } });
+      if (error || (data as { error?: string })?.error) {
+        toast.error("فشل قراءة الملف بالـ AI"); return;
+      }
+      const d = (data as { data: Record<string, string> }).data || {};
+      const title = String(d.job_title || "").trim();
+      if (title && !position) {
+        let matched = false;
+        outer: for (const [sec, depts] of Object.entries(POSITIONS)) {
+          for (const [dep, list] of Object.entries(depts)) {
+            if (list.some(p => p.toLowerCase() === title.toLowerCase())) {
+              setSector(sec);
+              setDepartment(dep === "-" ? "" : dep);
+              setPosition(title);
+              matched = true;
+              break outer;
+            }
+          }
+        }
+        if (!matched) {
+          setPosition(NEW_POSITION);
+          setNewPositionTitle(title);
+        }
+      }
+
+      setForm(f => ({
+        ...f,
+        location: d.location || f.location,
+        purpose: d.purpose || f.purpose,
+        tasksAndResponsibilities: d.tasks || f.tasksAndResponsibilities,
+        qualifications: d.qualifications || f.qualifications,
+        workingConditions: d.workingConditions || f.workingConditions,
+        reportsTo: d.reportsTo || f.reportsTo,
+        directReports: d.directReports || f.directReports,
+        kpis: d.kpis || f.kpis,
+        notes: d.notes || f.notes,
+        pd_authority: d.pd_authority || f.pd_authority || "N/A",
+        pd_financial: d.pd_financial || f.pd_financial || "N/A",
+        pd_annual: d.pd_annual || f.pd_annual || "N/A",
+        pd_hiring: d.pd_hiring || f.pd_hiring || "N/A",
+      }));
+      const parsedReports = (data as { data: { reports?: ReportRow[] } }).data?.reports;
+      if (parsedReports && parsedReports.length > 0) {
+        setReports(parsedReports.map(r => ({
+          name: r.name || "",
+          frequency: r.frequency || "",
+          purpose: r.purpose || "",
+          presented_to: r.presented_to || "",
+        })));
+      }
+      toast.success("تم استخراج البيانات — راجعها قبل الإرسال");
+    } catch (err) {
+      console.error(err);
+      toast.error("حصلت مشكلة أثناء قراءة الملف");
+    } finally {
+      setParsing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,6 +406,26 @@ function SubmitPage() {
           <h1 className="text-3xl md:text-4xl font-bold mb-3">{t.title}</h1>
           <p className="text-muted-foreground">{t.subtitle}</p>
         </div>
+
+        <Card className="p-4 mb-6 bg-primary/5 border-primary/20">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-2 text-sm">
+              <Wand2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold">ارفع ملف وخلي الـ AI يملأ الفورم بدالك</div>
+                <p className="text-xs text-muted-foreground">يدعم ملفات نصية (.txt) — راجع البيانات بعد التعبئة قبل الإرسال.</p>
+              </div>
+            </div>
+            <div>
+              <input ref={fileInputRef} type="file" accept=".txt,.md,.csv,.json,.docx,.pdf" onChange={handleFile} className="hidden" />
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={parsing} className="gap-1.5">
+                {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {parsing ? "جاري التحليل..." : "رفع ملف"}
+              </Button>
+            </div>
+          </div>
+        </Card>
+
 
         <Card className="p-3 mb-6 bg-accent/10 border-accent/30">
           <div className="flex gap-2 text-sm">

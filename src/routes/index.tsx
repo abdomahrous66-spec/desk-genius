@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileText, Sparkles, Send, Clock, Users, LogOut, Loader2 } from "lucide-react";
+import { FileText, Sparkles, Send, Clock, Users, LogOut, Loader2, Layers } from "lucide-react";
 import { useAuth, signOut } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/")({
@@ -55,12 +55,20 @@ function Index() {
             <p className="text-lg opacity-90">
               املأ بيانات الوظيفة والذكاء الاصطناعي يجهزلك التوصيف الكامل بصيغة Word.
             </p>
-            <Link to="/submit">
-              <Button size="lg" variant="secondary" className="text-base px-10 py-6 shadow-elevated">
-                <Send className="w-5 h-5 ml-2" />
-                ابدأ تحليل وظيفي
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
+              <Link to="/submit">
+                <Button size="lg" variant="secondary" className="text-base px-10 py-6 shadow-elevated">
+                  <Send className="w-5 h-5 ml-2" />
+                  ابدأ تحليل وظيفي
+                </Button>
+              </Link>
+              <Link to="/structure">
+                <Button size="lg" variant="outline" className="text-base px-8 py-6 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                  <Layers className="w-5 h-5 ml-2" />
+                  الهيكل التنظيمي
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
       </div>
@@ -104,6 +112,11 @@ function Index() {
               <Link to="/dashboard">
                 <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
                   <Clock className="w-5 h-5 ml-2" /> الطلبات السابقة
+                </Button>
+              </Link>
+              <Link to="/structure">
+                <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                  <Layers className="w-5 h-5 ml-2" /> الهيكل التنظيمي
                 </Button>
               </Link>
               <Link to="/users">
