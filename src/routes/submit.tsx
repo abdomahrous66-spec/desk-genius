@@ -228,22 +228,60 @@ function SubmitPage() {
   const updateReport = (i: number, k: keyof ReportRow, v: string) =>
     setReports(reports.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
 
+  const extractFileText = async (file: File): Promise<string> => {
+    const name = file.name.toLowerCase();
+    // Excel
+    if (/\.(xlsx|xls|xlsm|csv)$/.test(name)) {
+      const XLSX = await import("xlsx");
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const parts: string[] = [];
+      for (const sheet of wb.SheetNames) {
+        parts.push(`### Sheet: ${sheet}`);
+        parts.push(XLSX.utils.sheet_to_csv(wb.Sheets[sheet]));
+      }
+      return parts.join("\n");
+    }
+    // Word
+    if (/\.docx$/.test(name)) {
+      const mammoth = await import("mammoth");
+      const buf = await file.arrayBuffer();
+      const res = await mammoth.extractRawText({ arrayBuffer: buf });
+      return res.value || "";
+    }
+    // PDF
+    if (/\.pdf$/.test(name)) {
+      const pdfjs = await import("pdfjs-dist");
+      // Use bundled worker
+      // @ts-expect-error - worker import
+      const workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+      pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buf }).promise;
+      const parts: string[] = [];
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const tc = await page.getTextContent();
+        // deno-lint-ignore no-explicit-any
+        parts.push(tc.items.map((it: any) => it.str).join(" "));
+      }
+      return parts.join("\n");
+    }
+    // Plain text
+    if (file.type.startsWith("text/") || /\.(txt|md|json)$/.test(name)) {
+      return await file.text();
+    }
+    throw new Error("نوع الملف غير مدعوم");
+  };
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("الملف أكبر من 5MB"); return; }
+    if (file.size > 15 * 1024 * 1024) { toast.error("الملف أكبر من 15MB"); return; }
     setParsing(true);
     try {
-      let text = "";
-      if (file.type.startsWith("text/") || /\.(txt|md|csv|json)$/i.test(file.name)) {
-        text = await file.text();
-      } else {
-        // For docx/pdf: extract readable runs by stripping non-text bytes (best-effort fallback).
-        const buf = await file.arrayBuffer();
-        const raw = new TextDecoder("utf-8", { fatal: false }).decode(buf);
-        text = raw.replace(/[\x00-\x08\x0E-\x1F]/g, " ").replace(/\s+/g, " ");
-      }
-      if (text.trim().length < 20) { toast.error("الملف فاضي أو غير مدعوم — جرب ملف نصي (.txt) أو الصق المحتوى يدوياً"); return; }
+      const text = await extractFileText(file);
+      if (text.trim().length < 20) { toast.error("الملف فاضي أو غير مدعوم"); return; }
 
       const { data, error } = await supabase.functions.invoke("parse-job-doc", { body: { text } });
       if (error || (data as { error?: string })?.error) {
@@ -298,12 +336,13 @@ function SubmitPage() {
       toast.success("تم استخراج البيانات — راجعها قبل الإرسال");
     } catch (err) {
       console.error(err);
-      toast.error("حصلت مشكلة أثناء قراءة الملف");
+      toast.error(err instanceof Error ? err.message : "حصلت مشكلة أثناء قراءة الملف");
     } finally {
       setParsing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -413,11 +452,11 @@ function SubmitPage() {
               <Wand2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <div className="font-semibold">ارفع ملف وخلي الـ AI يملأ الفورم بدالك</div>
-                <p className="text-xs text-muted-foreground">يدعم ملفات نصية (.txt) — راجع البيانات بعد التعبئة قبل الإرسال.</p>
+                <p className="text-xs text-muted-foreground">يدعم Excel (.xlsx/.xls/.csv) و Word (.docx) و PDF و نصوص (.txt/.md). راجع البيانات قبل الإرسال.</p>
               </div>
             </div>
             <div>
-              <input ref={fileInputRef} type="file" accept=".txt,.md,.csv,.json,.docx,.pdf" onChange={handleFile} className="hidden" />
+              <input ref={fileInputRef} type="file" accept=".txt,.md,.csv,.json,.docx,.pdf,.xlsx,.xls,.xlsm" onChange={handleFile} className="hidden" />
               <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={parsing} className="gap-1.5">
                 {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 {parsing ? "جاري التحليل..." : "رفع ملف"}
