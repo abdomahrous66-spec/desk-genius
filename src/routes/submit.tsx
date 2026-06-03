@@ -253,7 +253,6 @@ function SubmitPage() {
     if (/\.pdf$/.test(name)) {
       const pdfjs = await import("pdfjs-dist");
       // Use bundled worker
-      // @ts-expect-error - worker import
       const workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
       pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
       const buf = await file.arrayBuffer();
