@@ -34,7 +34,7 @@ export function useAuth(): AuthState {
         setState({
           loading: false,
           user,
-          role: (roleRow?.role as Role) ?? "manager",
+          role: (roleRow?.role as Role) ?? null,
           username: profile?.username ?? null,
         });
       }, 0);

@@ -15,92 +15,56 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const GEMINI_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_KEY) throw new Error("GOOGLE_GEMINI_API_KEY missing");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    const schema = {
-      type: "object",
-      properties: {
-        job_title: { type: "string" },
-        sector: { type: "string" },
-        department: { type: "string" },
-        location: { type: "string" },
-        reportsTo: { type: "string" },
-        directReports: { type: "string" },
-        purpose: { type: "string" },
-        tasks: { type: "string" },
-        qualifications: { type: "string" },
-        workingConditions: { type: "string" },
-        kpis: { type: "string" },
-        notes: { type: "string" },
-        pd_authority: { type: "string" },
-        pd_financial: { type: "string" },
-        pd_annual: { type: "string" },
-        pd_hiring: { type: "string" },
-        reports: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              name: { type: "string" }, frequency: { type: "string" },
-              purpose: { type: "string" }, presented_to: { type: "string" },
-            },
-            required: ["name", "frequency", "purpose", "presented_to"],
-          },
-        },
-      },
-      required: [
-        "job_title", "sector", "department", "location", "reportsTo", "directReports",
-        "purpose", "tasks", "qualifications", "workingConditions", "kpis", "notes",
-        "pd_authority", "pd_financial", "pd_annual", "pd_hiring", "reports",
-      ],
-    };
-
-    const prompt = `You are an HR data extraction assistant. Parse the following job-related text (could be a JD, form, notes, anything) and extract structured fields. Use empty string "" or "N/A" if a field is unknown. Output language: match the input language. For arrays, return [] if not found.
+    const prompt = `You are an HR data extraction assistant. Parse the following job-related text (could be JD, form, notes, sheet rows, anything) and extract structured fields. Use "" or "N/A" if a field is unknown. Output language: match input language. For arrays, return [] if not found.
 
 Input text:
 """
-${text.slice(0, 20000)}
+${text.slice(0, 40000)}
 """
 
-Extraction guidance:
-- job_title: the position name.
-- sector / department: the organizational unit (best guess).
-- location: physical office/site if mentioned.
-- reportsTo: direct manager title.
-- directReports: list of subordinate titles (one per line if multiple).
-- purpose: main job purpose (1-3 sentences).
-- tasks: all tasks/responsibilities as bullet points (one per line).
-- qualifications: education, experience, skills.
-- workingConditions: hours, environment, internal/external communication.
-- kpis: KPIs if mentioned.
-- pd_authority/financial/annual/hiring: position dimensions (use "N/A" if missing).
-- reports: list of reports the role produces (name, frequency, purpose, presented_to).
-- notes: anything else worth keeping.`;
+Return ONLY a JSON object (no fences) with these keys:
+{
+  "job_title":"", "sector":"", "department":"", "location":"",
+  "reportsTo":"", "directReports":"", "purpose":"", "tasks":"",
+  "qualifications":"", "workingConditions":"", "kpis":"", "notes":"",
+  "pd_authority":"", "pd_financial":"", "pd_annual":"", "pd_hiring":"",
+  "reports":[{"name":"","frequency":"","purpose":"","presented_to":""}]
+}
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
-    const resp = await fetch(url, {
+Guidance: tasks = bullet list (one per line). directReports = one per line. pd_* = "N/A" if missing. reports = list of recurring reports produced by the role.`;
+
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          response_mime_type: "application/json",
-          response_schema: schema,
-          temperature: 0.2,
-        },
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: "Return ONLY valid JSON, no markdown fences, no commentary." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
       }),
     });
     if (!resp.ok) {
       const t = await resp.text();
-      console.error("Gemini error:", resp.status, t);
-      return new Response(JSON.stringify({ error: "AI extraction failed", detail: t }), {
+      console.error("AI Gateway error:", resp.status, t);
+      const msg = resp.status === 429 ? "حد الاستخدام، جرب بعد دقيقة"
+        : resp.status === 402 ? "نفد رصيد الـ AI — اشحن من إعدادات Lovable Cloud"
+        : "فشل استخراج البيانات بالـ AI";
+      return new Response(JSON.stringify({ error: msg, detail: t }), {
         status: resp.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const data = await resp.json();
-    const out = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!out) throw new Error("Gemini returned no content");
+    const out: string | undefined = data?.choices?.[0]?.message?.content;
+    if (!out) throw new Error("AI returned no content");
     let parsed: Record<string, unknown>;
     try { parsed = JSON.parse(out); }
     catch { parsed = JSON.parse(out.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim()); }

@@ -19,16 +19,10 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [seeding, setSeeding] = useState(true);
 
-  // Ensure bootstrap admin exists, and redirect if already signed in.
+  // Redirect if already signed in.
   useEffect(() => {
     const init = async () => {
-      try {
-        await supabase.functions.invoke("ensure-admin");
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setSeeding(false);
-      }
+      setSeeding(false);
       const { data } = await supabase.auth.getSession();
       if (data.session) nav({ to: "/" });
     };
