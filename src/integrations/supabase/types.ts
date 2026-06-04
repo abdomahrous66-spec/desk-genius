@@ -14,10 +14,43 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_analyses: {
         Row: {
           admin_notified: boolean
           analysis_result: string | null
+          company_id: string | null
           created_at: string
           department: string | null
           id: string
@@ -25,13 +58,17 @@ export type Database = {
           job_title: string
           manager_name: string | null
           raw_input: Json
+          section: string | null
+          sector: string | null
           status: string
+          subsection: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
           admin_notified?: boolean
           analysis_result?: string | null
+          company_id?: string | null
           created_at?: string
           department?: string | null
           id?: string
@@ -39,13 +76,17 @@ export type Database = {
           job_title: string
           manager_name?: string | null
           raw_input: Json
+          section?: string | null
+          sector?: string | null
           status?: string
+          subsection?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           admin_notified?: boolean
           analysis_result?: string | null
+          company_id?: string | null
           created_at?: string
           department?: string | null
           id?: string
@@ -53,11 +94,69 @@ export type Database = {
           job_title?: string
           manager_name?: string | null
           raw_input?: Json
+          section?: string | null
+          sector?: string | null
           status?: string
+          subsection?: string | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "job_analyses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      positions: {
+        Row: {
+          company_id: string
+          created_at: string
+          department: string
+          id: string
+          job_code: string | null
+          manager_position: string | null
+          position_title: string
+          section: string
+          sector: string
+          subsection: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          department?: string
+          id?: string
+          job_code?: string | null
+          manager_position?: string | null
+          position_title: string
+          section?: string
+          sector: string
+          subsection?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          department?: string
+          id?: string
+          job_code?: string | null
+          manager_position?: string | null
+          position_title?: string
+          section?: string
+          sector?: string
+          subsection?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "positions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -106,6 +205,7 @@ export type Database = {
       }
       user_scopes: {
         Row: {
+          company_id: string | null
           created_at: string
           department: string | null
           id: string
@@ -113,6 +213,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           department?: string | null
           id?: string
@@ -120,13 +221,22 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           department?: string | null
           id?: string
           sector?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_scopes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -136,6 +246,15 @@ export type Database = {
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      user_has_scope: {
+        Args: {
+          _company_id: string
+          _department: string
+          _sector: string
           _user_id: string
         }
         Returns: boolean
