@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.user_has_scope(uuid, uuid, text, text) FROM PUBLIC, anon, authenticated;
