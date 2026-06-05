@@ -192,10 +192,17 @@ function SubmitPage() {
       : []),
     [sector, isAllowed]
   );
-  const positionsList = useMemo(
-    () => (sector && department && POSITIONS[sector]?.[department]) ? POSITIONS[sector][department] : [],
-    [sector, department]
+  // Positions directly under the sector (JSON key "-") — no department parent
+  const sectorDirectPositions = useMemo(
+    () => (sector && POSITIONS[sector]?.["-"]) ? POSITIONS[sector]["-"] : [],
+    [sector]
   );
+  const hasRealDepartments = departments.length > 0;
+  const positionsList = useMemo(() => {
+    if (!sector) return [];
+    if (department) return POSITIONS[sector]?.[department] || [];
+    return sectorDirectPositions; // no department picked → show sector-level positions
+  }, [sector, department, sectorDirectPositions]);
   const isNewPosition = position === NEW_POSITION;
 
   // Upload + AI parse
@@ -349,11 +356,16 @@ function SubmitPage() {
 
     const finalTitle = isNewPosition ? newPositionTitle.trim() : position;
     const required = [
-      sector, department, finalTitle, collar, outputLang,
+      sector, finalTitle, collar, outputLang,
       form.location, form.reportsTo, form.purpose, form.tasksAndResponsibilities,
       form.qualifications, form.workingConditions,
       form.pd_authority, form.pd_financial, form.pd_annual, form.pd_hiring,
     ];
+    // Department required ONLY when the sector actually has sub-departments
+    if (hasRealDepartments && !department.trim()) {
+      toast.error(t.errRequired);
+      return;
+    }
     if (required.some(v => !v.trim()) || (isNewPosition && !approvedBy.trim())) {
       toast.error(t.errRequired);
       return;
@@ -372,6 +384,8 @@ function SubmitPage() {
         .insert([{
           job_title: finalTitle,
           department: department || null,
+          sector: sector || null,
+          company_id: "00000000-0000-0000-0000-000000000002",
           manager_name: null,
           user_id: userId,
           raw_input: {
@@ -506,9 +520,15 @@ function SubmitPage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={t.department} required>
-                <Select value={department} onValueChange={(v) => { setDepartment(v); setPosition(""); }} disabled={!sector}>
-                  <SelectTrigger><SelectValue placeholder={t.departmentPh} /></SelectTrigger>
+              <Field label={hasRealDepartments ? t.department : (lang === "ar" ? "القسم / الإدارة (تابعة للقطاع مباشرة)" : "Department (reports directly to sector)")} required={hasRealDepartments}>
+                <Select
+                  value={department}
+                  onValueChange={(v) => { setDepartment(v); setPosition(""); }}
+                  disabled={!sector || !hasRealDepartments}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={hasRealDepartments ? t.departmentPh : (lang === "ar" ? "لا يوجد إدارات — الوظائف تحت القطاع مباشرة" : "No departments — positions sit under the sector")} />
+                  </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
@@ -517,7 +537,7 @@ function SubmitPage() {
             </div>
 
             <Field label={t.position} required>
-              <Select value={position} onValueChange={setPosition} disabled={!department}>
+              <Select value={position} onValueChange={setPosition} disabled={!sector || (hasRealDepartments && !department)}>
                 <SelectTrigger><SelectValue placeholder={t.positionPh} /></SelectTrigger>
                 <SelectContent>
                   {positionsList.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}

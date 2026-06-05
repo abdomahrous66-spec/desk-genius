@@ -34,12 +34,23 @@ function normalize(s: string) { return s.toLowerCase().trim(); }
 
 function StructurePage() {
   const navigate = useNavigate();
-  const { isAllowed, loading } = useScopes();
+  const { isAllowed, loading, scopes, isRestricted } = useScopes();
   const [query, setQuery] = useState("");
   const [openCompany, setOpenCompany] = useState<string | null>("نهضة مصر للنشر");
   const [openSector, setOpenSector] = useState<string | null>(null);
   const [openDept, setOpenDept] = useState<Record<string, boolean>>({});
   const [approved, setApproved] = useState<ApprovedJD[]>([]);
+
+  // Auto-expand the first allowed sector + department for restricted managers
+  useEffect(() => {
+    if (loading || !isRestricted || !scopes || scopes.length === 0) return;
+    const s = scopes[0];
+    // Find which company holds this sector
+    const company = Object.entries(COMPANIES).find(([, secs]) => secs[s.sector])?.[0] ?? "نهضة مصر للنشر";
+    setOpenCompany(company);
+    setOpenSector(`${company}::${s.sector}`);
+    if (s.department) setOpenDept(prev => ({ ...prev, [`${company}::${s.sector}::${s.department}`]: true }));
+  }, [loading, isRestricted, scopes]);
 
   useEffect(() => {
     (async () => {
