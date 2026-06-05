@@ -14,12 +14,12 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/RequireAuth";
-import positionsData from "@/data/positions.json";
-
-const POSITIONS = positionsData as Record<string, Record<string, string[]>>;
-const ALL_SECTORS = Object.keys(POSITIONS).sort();
+import { useStructure } from "@/hooks/use-structure";
 
 export const Route = createFileRoute("/users")({
   component: () => (
@@ -30,9 +30,8 @@ export const Route = createFileRoute("/users")({
 });
 
 type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; role: string };
-type ScopeRow = { user_id: string; sector: string; department: string | null };
+type ScopeRow = { user_id: string; company_id: string | null; sector: string | null; department: string | null };
 
-// Loose typed accessor (user_scopes not in generated types yet)
 const scopesTable = () => (supabase as unknown as {
   from: (t: string) => {
     select: (c: string) => Promise<{ data: ScopeRow[] | null }>;
@@ -66,7 +65,7 @@ function UsersPage() {
       };
     }).sort((a, b) => a.role === "admin" ? -1 : b.role === "admin" ? 1 : 0);
     setRows(merged);
-    const { data: sc } = await scopesTable().select("user_id,sector,department");
+    const { data: sc } = await scopesTable().select("user_id,company_id,sector,department");
     setScopes(sc ?? []);
     setLoading(false);
   };
@@ -110,7 +109,7 @@ function UsersPage() {
           </Link>
         </div>
         <h1 className="text-3xl md:text-4xl font-bold mb-2">إدارة المستخدمين</h1>
-        <p className="text-muted-foreground mb-6">أنشئ يوزر وكلمة مرور لكل مدير، وحدد القطاعات/الإدارات اللي مسموح يشوفها.</p>
+        <p className="text-muted-foreground mb-6">أنشئ يوزر لكل مدير وحدد الشركة/القطاعات/الإدارات المسموح بها.</p>
 
         <Card className="bg-gradient-card p-6 shadow-soft mb-8">
           <h2 className="font-bold text-lg mb-4 inline-flex items-center gap-2">
@@ -167,7 +166,7 @@ function UsersPage() {
                           <AlertDialogContent dir="rtl">
                             <AlertDialogHeader>
                               <AlertDialogTitle>حذف المستخدم</AlertDialogTitle>
-                              <AlertDialogDescription>هتحذف "{r.username}" نهائياً ومش هيقدر يدخل تاني.</AlertDialogDescription>
+                              <AlertDialogDescription>هتحذف "{r.username}" نهائياً.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>إلغاء</AlertDialogCancel>
@@ -188,41 +187,65 @@ function UsersPage() {
   );
 }
 
-function ScopesDialog({
-  userId, username, currentScopes, onSaved,
-}: { userId: string; username: string; currentScopes: ScopeRow[]; onSaved: () => void }) {
+function ScopesDialog({ userId, username, currentScopes, onSaved }: {
+  userId: string; username: string; currentScopes: ScopeRow[]; onSaved: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Map: sector -> Set of allowed departments. Special "*" = all departments in sector.
+  const { companies, tree, loading } = useStructure();
+  const childCompanies = useMemo(() => companies.filter(c => c.parent_id), [companies]);
+  const [companyId, setCompanyId] = useState<string>("");
+  // Map sector -> Set<dept|*>
   const [selection, setSelection] = useState<Record<string, Set<string>>>({});
 
   useEffect(() => {
     if (!open) return;
+    // Group current scopes by company
+    const companies = Array.from(new Set(currentScopes.map(s => s.company_id).filter(Boolean))) as string[];
+    const cid = companies[0] || childCompanies[0]?.id || "";
+    setCompanyId(cid);
     const map: Record<string, Set<string>> = {};
     for (const s of currentScopes) {
-      if (!map[s.sector]) map[s.sector] = new Set();
-      map[s.sector].add(s.department ?? "*");
+      if (s.company_id !== cid) continue;
+      const sec = s.sector || "*";
+      if (!map[sec]) map[sec] = new Set();
+      map[sec].add(s.department ?? "*");
     }
     setSelection(map);
-  }, [open, currentScopes]);
+  }, [open, currentScopes, childCompanies]);
+
+  // Reload selection when switching companies (preserves saved selections in DB only)
+  useEffect(() => {
+    if (!open || !companyId) return;
+    const map: Record<string, Set<string>> = {};
+    for (const s of currentScopes) {
+      if (s.company_id !== companyId) continue;
+      const sec = s.sector || "*";
+      if (!map[sec]) map[sec] = new Set();
+      map[sec].add(s.department ?? "*");
+    }
+    setSelection(map);
+  }, [companyId]);
+
+  const sectorList = useMemo(() => {
+    if (!companyId) return [] as string[];
+    const t = tree[companyId] ?? {};
+    return Object.keys(t).sort();
+  }, [companyId, tree]);
 
   const toggleAll = (sector: string) => {
     setSelection(prev => {
       const next = { ...prev };
-      if (next[sector]?.has("*")) {
-        delete next[sector];
-      } else {
-        next[sector] = new Set(["*"]);
-      }
+      if (next[sector]?.has("*")) delete next[sector];
+      else next[sector] = new Set(["*"]);
       return next;
     });
   };
-
   const toggleDept = (sector: string, dept: string) => {
     setSelection(prev => {
       const next = { ...prev };
       const set = new Set(next[sector] || []);
-      set.delete("*"); // unselecting "all" if picking specific
+      set.delete("*");
       if (set.has(dept)) set.delete(dept); else set.add(dept);
       if (set.size === 0) delete next[sector];
       else next[sector] = set;
@@ -233,17 +256,26 @@ function ScopesDialog({
   const totalDepts = useMemo(() => Object.values(selection).reduce((sum, s) => sum + s.size, 0), [selection]);
 
   const save = async () => {
+    if (!companyId) { toast.error("اختار شركة"); return; }
     setSaving(true);
-    const { error: delErr } = await scopesTable().delete().eq("user_id", userId);
+    // Delete only this user's scopes for THIS company, then re-insert
+    const { error: delErr } = await (supabase as unknown as {
+      from: (t: string) => { delete: () => { eq: (k: string, v: string) => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } };
+    }).from("user_scopes").delete().eq("user_id", userId).eq("company_id", companyId);
     if (delErr) { toast.error("فشل حفظ الصلاحيات"); setSaving(false); return; }
-    const rows: { user_id: string; sector: string; department: string | null }[] = [];
+    const rowsToInsert: ScopeRow[] = [];
     for (const [sector, depts] of Object.entries(selection)) {
       for (const d of depts) {
-        rows.push({ user_id: userId, sector, department: d === "*" ? null : d });
+        rowsToInsert.push({
+          user_id: userId,
+          company_id: companyId,
+          sector: sector === "*" ? null : sector,
+          department: d === "*" ? null : d,
+        });
       }
     }
-    if (rows.length > 0) {
-      const { error: insErr } = await scopesTable().insert(rows);
+    if (rowsToInsert.length > 0) {
+      const { error: insErr } = await scopesTable().insert(rowsToInsert);
       if (insErr) { toast.error("فشل حفظ الصلاحيات"); setSaving(false); return; }
     }
     setSaving(false);
@@ -263,36 +295,53 @@ function ScopesDialog({
         <DialogHeader>
           <DialogTitle>صلاحيات {username}</DialogTitle>
           <DialogDescription>
-            اختار القطاعات والإدارات اللي مسموح للمدير يشوفها ويعمل JD لها. لو سيبتها كلها فاضية، هيشوف كل الهيكل.
+            اختار شركة وحدد القطاعات والإدارات. الصلاحيات بتنحفظ لكل شركة على حدة.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-3">
-          {ALL_SECTORS.map((sector) => {
-            const depts = Object.keys(POSITIONS[sector]).filter(d => d !== "-").sort();
-            const sectorSel = selection[sector] || new Set();
-            const allChecked = sectorSel.has("*");
-            return (
-              <Card key={sector} className="p-3">
-                <label className="flex items-center gap-2 font-semibold">
-                  <Checkbox checked={allChecked} onCheckedChange={() => toggleAll(sector)} />
-                  <span>{sector}</span>
-                  <span className="text-xs text-muted-foreground font-normal">— كل الإدارات</span>
-                </label>
-                {!allChecked && depts.length > 0 && (
-                  <div className="mt-3 mr-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {depts.map((d) => (
-                      <label key={d} className="flex items-center gap-2 text-sm">
-                        <Checkbox checked={sectorSel.has(d)} onCheckedChange={() => toggleDept(sector, d)} />
-                        <span>{d}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            );
-          })}
+        <div className="my-3">
+          <Label className="text-xs">الشركة</Label>
+          <Select value={companyId} onValueChange={setCompanyId}>
+            <SelectTrigger><SelectValue placeholder="اختر الشركة" /></SelectTrigger>
+            <SelectContent>
+              {childCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
+
+        {loading ? (
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        ) : (
+          <div className="space-y-3 py-3">
+            {sectorList.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-6">مفيش بيانات للشركة دي.</div>
+            ) : sectorList.map((sector) => {
+              const depts = Object.keys(tree[companyId][sector]).filter(d => d !== "-").sort();
+              const sectorSel = selection[sector] || new Set();
+              const allChecked = sectorSel.has("*");
+              const sectorLabel = sector === "-" ? "(بدون قطاع)" : sector;
+              return (
+                <Card key={sector} className="p-3">
+                  <label className="flex items-center gap-2 font-semibold">
+                    <Checkbox checked={allChecked} onCheckedChange={() => toggleAll(sector)} />
+                    <span>{sectorLabel}</span>
+                    <span className="text-xs text-muted-foreground font-normal">— كل الإدارات</span>
+                  </label>
+                  {!allChecked && depts.length > 0 && (
+                    <div className="mt-3 mr-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {depts.map((d) => (
+                        <label key={d} className="flex items-center gap-2 text-sm">
+                          <Checkbox checked={sectorSel.has(d)} onCheckedChange={() => toggleDept(sector, d)} />
+                          <span>{d}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         <DialogFooter className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
