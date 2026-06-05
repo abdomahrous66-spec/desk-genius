@@ -167,43 +167,54 @@ function SubmitPage() {
   const navigate = useNavigate();
   const prefill = Route.useSearch();
   const { isAllowed } = useScopes();
+  const { companies, positions, tree } = useStructure();
   const [submitting, setSubmitting] = useState(false);
   const [lang, setLang] = useState<Lang>("ar");
   const t = T[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
 
+  // Pre-select Nahdet Misr Publishing by default
+  const defaultCompanyId = prefill.company_id || "00000000-0000-0000-0000-000000000002";
+  const [companyId, setCompanyId] = useState(defaultCompanyId);
   const [sector, setSector] = useState(prefill.sector || "");
   const [department, setDepartment] = useState(prefill.department || "");
+  const [section, setSection] = useState("");
+  const [subsection, setSubsection] = useState("");
   const [position, setPosition] = useState(prefill.position || "");
   const [newPositionTitle, setNewPositionTitle] = useState("");
   const [approvedBy, setApprovedBy] = useState("");
   const [collar, setCollar] = useState<"white" | "blue" | "">("");
   const [outputLang, setOutputLang] = useState<"ar" | "en" | "">("");
 
+  const childCompanies = useMemo(
+    () => companies.filter(c => c.parent_id && isAllowed(c.id, null, null)),
+    [companies, isAllowed]
+  );
+  const compTree = tree[companyId] ?? {};
   const sectors = useMemo(
-    () => Object.keys(POSITIONS).filter(s => isAllowed(s)).sort(),
-    [isAllowed]
+    () => Object.keys(compTree).filter(s => isReal(s) && isAllowed(companyId, s, null)).sort(),
+    [compTree, isAllowed, companyId]
   );
   const departments = useMemo(
-    () => (sector && POSITIONS[sector]
-      ? Object.keys(POSITIONS[sector])
-          .filter(d => d && d !== "-")
-          .filter(d => isAllowed(sector, d))
-          .sort()
-      : []),
-    [sector, isAllowed]
-  );
-  // Positions directly under the sector (JSON key "-") — no department parent
-  const sectorDirectPositions = useMemo(
-    () => (sector && POSITIONS[sector]?.["-"]) ? POSITIONS[sector]["-"] : [],
-    [sector]
+    () => (sector && compTree[sector])
+      ? Object.keys(compTree[sector]).filter(d => isReal(d) && isAllowed(companyId, sector, d)).sort()
+      : [],
+    [sector, compTree, isAllowed, companyId]
   );
   const hasRealDepartments = departments.length > 0;
+  const sectionsList = useMemo(() => {
+    const node = compTree[sector]?.[department || NA_KEY];
+    return node ? Object.keys(node).filter(isReal).sort() : [];
+  }, [compTree, sector, department]);
+  const subsectionsList = useMemo(() => {
+    const node = compTree[sector]?.[department || NA_KEY]?.[section || NA_KEY];
+    return node ? Object.keys(node).filter(isReal).sort() : [];
+  }, [compTree, sector, department, section]);
   const positionsList = useMemo(() => {
     if (!sector) return [];
-    if (department) return POSITIONS[sector]?.[department] || [];
-    return sectorDirectPositions; // no department picked → show sector-level positions
-  }, [sector, department, sectorDirectPositions]);
+    const node = compTree[sector]?.[department || NA_KEY]?.[section || NA_KEY]?.[subsection || NA_KEY];
+    return node ? node.map(p => p.position_title) : [];
+  }, [compTree, sector, department, section, subsection]);
   const isNewPosition = position === NEW_POSITION;
 
   // Upload + AI parse
