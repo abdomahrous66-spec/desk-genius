@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2, Upload, Wand2 } from "lucide-react";
-import positionsData from "@/data/positions.json";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useScopes } from "@/hooks/use-scopes";
+import { useStructure, NA_KEY } from "@/hooks/use-structure";
 
 export const Route = createFileRoute("/submit")({
   validateSearch: (s: Record<string, unknown>) => ({
+    company_id: typeof s.company_id === "string" ? s.company_id : "",
     sector: typeof s.sector === "string" ? s.sector : "",
     department: typeof s.department === "string" ? s.department : "",
     position: typeof s.position === "string" ? s.position : "",
@@ -25,8 +26,8 @@ export const Route = createFileRoute("/submit")({
 });
 
 type Lang = "ar" | "en";
-const POSITIONS = positionsData as Record<string, Record<string, string[]>>;
 const NEW_POSITION = "__NEW__";
+const isReal = (k: string) => !!k && k !== NA_KEY;
 
 
 const T = {
@@ -166,43 +167,54 @@ function SubmitPage() {
   const navigate = useNavigate();
   const prefill = Route.useSearch();
   const { isAllowed } = useScopes();
+  const { companies, positions, tree } = useStructure();
   const [submitting, setSubmitting] = useState(false);
   const [lang, setLang] = useState<Lang>("ar");
   const t = T[lang];
   const dir = lang === "ar" ? "rtl" : "ltr";
 
+  // Pre-select Nahdet Misr Publishing by default
+  const defaultCompanyId = prefill.company_id || "00000000-0000-0000-0000-000000000002";
+  const [companyId, setCompanyId] = useState(defaultCompanyId);
   const [sector, setSector] = useState(prefill.sector || "");
   const [department, setDepartment] = useState(prefill.department || "");
+  const [section, setSection] = useState("");
+  const [subsection, setSubsection] = useState("");
   const [position, setPosition] = useState(prefill.position || "");
   const [newPositionTitle, setNewPositionTitle] = useState("");
   const [approvedBy, setApprovedBy] = useState("");
   const [collar, setCollar] = useState<"white" | "blue" | "">("");
   const [outputLang, setOutputLang] = useState<"ar" | "en" | "">("");
 
+  const childCompanies = useMemo(
+    () => companies.filter(c => c.parent_id && isAllowed(c.id, null, null)),
+    [companies, isAllowed]
+  );
+  const compTree = tree[companyId] ?? {};
   const sectors = useMemo(
-    () => Object.keys(POSITIONS).filter(s => isAllowed(s)).sort(),
-    [isAllowed]
+    () => Object.keys(compTree).filter(s => isReal(s) && isAllowed(companyId, s, null)).sort(),
+    [compTree, isAllowed, companyId]
   );
   const departments = useMemo(
-    () => (sector && POSITIONS[sector]
-      ? Object.keys(POSITIONS[sector])
-          .filter(d => d && d !== "-")
-          .filter(d => isAllowed(sector, d))
-          .sort()
-      : []),
-    [sector, isAllowed]
-  );
-  // Positions directly under the sector (JSON key "-") — no department parent
-  const sectorDirectPositions = useMemo(
-    () => (sector && POSITIONS[sector]?.["-"]) ? POSITIONS[sector]["-"] : [],
-    [sector]
+    () => (sector && compTree[sector])
+      ? Object.keys(compTree[sector]).filter(d => isReal(d) && isAllowed(companyId, sector, d)).sort()
+      : [],
+    [sector, compTree, isAllowed, companyId]
   );
   const hasRealDepartments = departments.length > 0;
+  const sectionsList = useMemo(() => {
+    const node = compTree[sector]?.[department || NA_KEY];
+    return node ? Object.keys(node).filter(isReal).sort() : [];
+  }, [compTree, sector, department]);
+  const subsectionsList = useMemo(() => {
+    const node = compTree[sector]?.[department || NA_KEY]?.[section || NA_KEY];
+    return node ? Object.keys(node).filter(isReal).sort() : [];
+  }, [compTree, sector, department, section]);
   const positionsList = useMemo(() => {
     if (!sector) return [];
-    if (department) return POSITIONS[sector]?.[department] || [];
-    return sectorDirectPositions; // no department picked → show sector-level positions
-  }, [sector, department, sectorDirectPositions]);
+    const node = compTree[sector]?.[department || NA_KEY]?.[section || NA_KEY]?.[subsection || NA_KEY];
+    return node ? node.map(p => p.position_title) : [];
+  }, [compTree, sector, department, section, subsection]);
   const isNewPosition = position === NEW_POSITION;
 
   // Upload + AI parse
@@ -296,19 +308,14 @@ function SubmitPage() {
       const d = (data as { data: Record<string, string> }).data || {};
       const title = String(d.job_title || "").trim();
       if (title && !position) {
-        let matched = false;
-        outer: for (const [sec, depts] of Object.entries(POSITIONS)) {
-          for (const [dep, list] of Object.entries(depts)) {
-            if (list.some(p => p.toLowerCase() === title.toLowerCase())) {
-              setSector(sec);
-              setDepartment(dep === "-" ? "" : dep);
-              setPosition(title);
-              matched = true;
-              break outer;
-            }
-          }
-        }
-        if (!matched) {
+        const found = positions.find(p => p.company_id === companyId && p.position_title.toLowerCase() === title.toLowerCase());
+        if (found) {
+          setSector(found.sector || "");
+          setDepartment(found.department || "");
+          setSection(found.section || "");
+          setSubsection(found.subsection || "");
+          setPosition(found.position_title);
+        } else {
           setPosition(NEW_POSITION);
           setNewPositionTitle(title);
         }
@@ -385,12 +392,17 @@ function SubmitPage() {
           job_title: finalTitle,
           department: department || null,
           sector: sector || null,
-          company_id: "00000000-0000-0000-0000-000000000002",
+          section: section || null,
+          subsection: subsection || null,
+          company_id: companyId,
           manager_name: null,
           user_id: userId,
           raw_input: {
+            company_id: companyId,
             sector,
             department,
+            section,
+            subsection,
             position_source: isNewPosition ? "new" : "existing",
             approved_by: isNewPosition ? approvedBy : "",
             collar,
@@ -510,10 +522,19 @@ function SubmitPage() {
             </div>
 
 
-            {/* Sector / Department / Position cascading */}
+            {/* Company / Sector / Department / Section / Subsection cascading */}
+            <Field label={lang === "ar" ? "الشركة *" : "Company *"} required>
+              <Select value={companyId} onValueChange={(v) => { setCompanyId(v); setSector(""); setDepartment(""); setSection(""); setSubsection(""); setPosition(""); }}>
+                <SelectTrigger><SelectValue placeholder={lang === "ar" ? "اختر الشركة" : "Select company"} /></SelectTrigger>
+                <SelectContent>
+                  {childCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+
             <div className="grid md:grid-cols-2 gap-4">
               <Field label={t.sector} required>
-                <Select value={sector} onValueChange={(v) => { setSector(v); setDepartment(""); setPosition(""); }}>
+                <Select value={sector} onValueChange={(v) => { setSector(v); setDepartment(""); setSection(""); setSubsection(""); setPosition(""); }}>
                   <SelectTrigger><SelectValue placeholder={t.sectorPh} /></SelectTrigger>
                   <SelectContent>
                     {sectors.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -523,11 +544,11 @@ function SubmitPage() {
               <Field label={hasRealDepartments ? t.department : (lang === "ar" ? "القسم / الإدارة (تابعة للقطاع مباشرة)" : "Department (reports directly to sector)")} required={hasRealDepartments}>
                 <Select
                   value={department}
-                  onValueChange={(v) => { setDepartment(v); setPosition(""); }}
+                  onValueChange={(v) => { setDepartment(v); setSection(""); setSubsection(""); setPosition(""); }}
                   disabled={!sector || !hasRealDepartments}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={hasRealDepartments ? t.departmentPh : (lang === "ar" ? "لا يوجد إدارات — الوظائف تحت القطاع مباشرة" : "No departments — positions sit under the sector")} />
+                    <SelectValue placeholder={hasRealDepartments ? t.departmentPh : (lang === "ar" ? "لا يوجد إدارات — الوظائف تحت القطاع مباشرة" : "No departments")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
@@ -535,6 +556,30 @@ function SubmitPage() {
                 </Select>
               </Field>
             </div>
+
+            {sectionsList.length > 0 && (
+              <div className="grid md:grid-cols-2 gap-4">
+                <Field label={lang === "ar" ? "القسم (Section) — اختياري" : "Section — optional"}>
+                  <Select value={section} onValueChange={(v) => { setSection(v); setSubsection(""); setPosition(""); }}>
+                    <SelectTrigger><SelectValue placeholder={lang === "ar" ? "اختر القسم (اختياري)" : "Select section (optional)"} /></SelectTrigger>
+                    <SelectContent>
+                      {sectionsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                {subsectionsList.length > 0 && (
+                  <Field label={lang === "ar" ? "القسم الفرعي (Subsection) — اختياري" : "Subsection — optional"}>
+                    <Select value={subsection} onValueChange={(v) => { setSubsection(v); setPosition(""); }} disabled={!section}>
+                      <SelectTrigger><SelectValue placeholder={lang === "ar" ? "اختر القسم الفرعي" : "Select subsection"} /></SelectTrigger>
+                      <SelectContent>
+                        {subsectionsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              </div>
+            )}
+
 
             <Field label={t.position} required>
               <Select value={position} onValueChange={setPosition} disabled={!sector || (hasRealDepartments && !department)}>
