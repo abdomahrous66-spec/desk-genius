@@ -192,10 +192,17 @@ function SubmitPage() {
       : []),
     [sector, isAllowed]
   );
-  const positionsList = useMemo(
-    () => (sector && department && POSITIONS[sector]?.[department]) ? POSITIONS[sector][department] : [],
-    [sector, department]
+  // Positions directly under the sector (JSON key "-") — no department parent
+  const sectorDirectPositions = useMemo(
+    () => (sector && POSITIONS[sector]?.["-"]) ? POSITIONS[sector]["-"] : [],
+    [sector]
   );
+  const hasRealDepartments = departments.length > 0;
+  const positionsList = useMemo(() => {
+    if (!sector) return [];
+    if (department) return POSITIONS[sector]?.[department] || [];
+    return sectorDirectPositions; // no department picked → show sector-level positions
+  }, [sector, department, sectorDirectPositions]);
   const isNewPosition = position === NEW_POSITION;
 
   // Upload + AI parse
