@@ -520,9 +520,15 @@ function SubmitPage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={t.department} required>
-                <Select value={department} onValueChange={(v) => { setDepartment(v); setPosition(""); }} disabled={!sector}>
-                  <SelectTrigger><SelectValue placeholder={t.departmentPh} /></SelectTrigger>
+              <Field label={hasRealDepartments ? t.department : (lang === "ar" ? "القسم / الإدارة (تابعة للقطاع مباشرة)" : "Department (reports directly to sector)")} required={hasRealDepartments}>
+                <Select
+                  value={department}
+                  onValueChange={(v) => { setDepartment(v); setPosition(""); }}
+                  disabled={!sector || !hasRealDepartments}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={hasRealDepartments ? t.departmentPh : (lang === "ar" ? "لا يوجد إدارات — الوظائف تحت القطاع مباشرة" : "No departments — positions sit under the sector")} />
+                  </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
@@ -531,7 +537,7 @@ function SubmitPage() {
             </div>
 
             <Field label={t.position} required>
-              <Select value={position} onValueChange={setPosition} disabled={!department}>
+              <Select value={position} onValueChange={setPosition} disabled={!sector || (hasRealDepartments && !department)}>
                 <SelectTrigger><SelectValue placeholder={t.positionPh} /></SelectTrigger>
                 <SelectContent>
                   {positionsList.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
