@@ -384,6 +384,8 @@ function SubmitPage() {
         .insert([{
           job_title: finalTitle,
           department: department || null,
+          sector: sector || null,
+          company_id: "00000000-0000-0000-0000-000000000002",
           manager_name: null,
           user_id: userId,
           raw_input: {
