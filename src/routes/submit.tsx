@@ -356,11 +356,16 @@ function SubmitPage() {
 
     const finalTitle = isNewPosition ? newPositionTitle.trim() : position;
     const required = [
-      sector, department, finalTitle, collar, outputLang,
+      sector, finalTitle, collar, outputLang,
       form.location, form.reportsTo, form.purpose, form.tasksAndResponsibilities,
       form.qualifications, form.workingConditions,
       form.pd_authority, form.pd_financial, form.pd_annual, form.pd_hiring,
     ];
+    // Department required ONLY when the sector actually has sub-departments
+    if (hasRealDepartments && !department.trim()) {
+      toast.error(t.errRequired);
+      return;
+    }
     if (required.some(v => !v.trim()) || (isNewPosition && !approvedBy.trim())) {
       toast.error(t.errRequired);
       return;
