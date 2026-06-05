@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2, Upload, Wand2 } from "lucide-react";
-import positionsData from "@/data/positions.json";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useScopes } from "@/hooks/use-scopes";
+import { useStructure, NA_KEY } from "@/hooks/use-structure";
 
 export const Route = createFileRoute("/submit")({
   validateSearch: (s: Record<string, unknown>) => ({
+    company_id: typeof s.company_id === "string" ? s.company_id : "",
     sector: typeof s.sector === "string" ? s.sector : "",
     department: typeof s.department === "string" ? s.department : "",
     position: typeof s.position === "string" ? s.position : "",
@@ -25,8 +26,8 @@ export const Route = createFileRoute("/submit")({
 });
 
 type Lang = "ar" | "en";
-const POSITIONS = positionsData as Record<string, Record<string, string[]>>;
 const NEW_POSITION = "__NEW__";
+const isReal = (k: string) => !!k && k !== NA_KEY;
 
 
 const T = {
