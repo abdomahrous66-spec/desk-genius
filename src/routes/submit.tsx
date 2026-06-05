@@ -308,19 +308,14 @@ function SubmitPage() {
       const d = (data as { data: Record<string, string> }).data || {};
       const title = String(d.job_title || "").trim();
       if (title && !position) {
-        let matched = false;
-        outer: for (const [sec, depts] of Object.entries(POSITIONS)) {
-          for (const [dep, list] of Object.entries(depts)) {
-            if (list.some(p => p.toLowerCase() === title.toLowerCase())) {
-              setSector(sec);
-              setDepartment(dep === "-" ? "" : dep);
-              setPosition(title);
-              matched = true;
-              break outer;
-            }
-          }
-        }
-        if (!matched) {
+        const found = positions.find(p => p.company_id === companyId && p.position_title.toLowerCase() === title.toLowerCase());
+        if (found) {
+          setSector(found.sector || "");
+          setDepartment(found.department || "");
+          setSection(found.section || "");
+          setSubsection(found.subsection || "");
+          setPosition(found.position_title);
+        } else {
           setPosition(NEW_POSITION);
           setNewPositionTitle(title);
         }
