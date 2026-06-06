@@ -288,6 +288,8 @@ function ResultPage() {
                     {downloadingLang === "en" ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <FileText className="w-4 h-4 ml-1.5" />}
                     Download JD (English)
                   </Button>
+                </>
+              ) : editingAnalysis ? (
                 <>
                   <Button onClick={cancelEditAnalysis} variant="outline" size="sm" disabled={savingAnalysis}>
                     <X className="w-4 h-4 ml-1.5" /> إلغاء
