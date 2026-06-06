@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowRight, Copy, Download, FileText, Sparkles, AlertCircle, Pencil, Save, X } from "lucide-react";
+import { Loader2, ArrowRight, Copy, Download, FileText, Sparkles, AlertCircle, Pencil, Save, X, Languages } from "lucide-react";
 import { toast } from "sonner";
 import { generateJDDocx, type JDData } from "@/lib/generate-jd-docx";
 
@@ -90,17 +90,39 @@ function ResultPage() {
     URL.revokeObjectURL(url);
   };
 
-  const downloadJD = async () => {
+  const [downloadingLang, setDownloadingLang] = useState<"ar" | "en" | null>(null);
+
+  // Quick heuristic: does the JD look already in the target language?
+  const looksArabic = (s: string) => /[\u0600-\u06FF]/.test(s);
+  const jdLanguage = (jd: JDData): "ar" | "en" =>
+    looksArabic(`${jd.position_title || ""} ${jd.main_job_purpose || ""}`) ? "ar" : "en";
+
+  const downloadJD = async (target: "ar" | "en") => {
     if (!record?.jd_data) {
       toast.error("بيانات الـ Job Description لسه مش جاهزة");
       return;
     }
+    setDownloadingLang(target);
     try {
-      await generateJDDocx(record.jd_data);
-      toast.success("تم تحميل ملف الـ Job Description");
+      let jdToUse: JDData = record.jd_data;
+      if (jdLanguage(record.jd_data) !== target) {
+        toast.message(target === "ar" ? "جاري الترجمة للعربية..." : "Translating to English...");
+        const { data, error } = await supabase.functions.invoke("translate-jd", {
+          body: { jd: record.jd_data, target },
+        });
+        if (error || (data as { error?: string })?.error) {
+          toast.error("فشلت الترجمة، حاول تاني");
+          return;
+        }
+        jdToUse = (data as { jd: JDData }).jd;
+      }
+      await generateJDDocx(jdToUse);
+      toast.success(target === "ar" ? "تم تحميل النسخة العربية" : "English version downloaded");
     } catch (e) {
       console.error(e);
       toast.error("حصلت مشكلة في توليد الملف");
+    } finally {
+      setDownloadingLang(null);
     }
   };
 
@@ -258,12 +280,14 @@ function ResultPage() {
                     <Pencil className="w-4 h-4 ml-1.5" />
                     تعديل الـ JD
                   </Button>
-                  <Button onClick={downloadJD} size="sm" className="bg-primary text-primary-foreground" disabled={!record.jd_data}>
-                    <FileText className="w-4 h-4 ml-1.5" />
-                    تحميل Job Description (Word)
+                  <Button onClick={() => downloadJD("ar")} size="sm" className="bg-primary text-primary-foreground" disabled={!record.jd_data || downloadingLang !== null}>
+                    {downloadingLang === "ar" ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Languages className="w-4 h-4 ml-1.5" />}
+                    تحميل JD (عربي)
                   </Button>
-                </>
-              ) : editingAnalysis ? (
+                  <Button onClick={() => downloadJD("en")} size="sm" variant="secondary" disabled={!record.jd_data || downloadingLang !== null}>
+                    {downloadingLang === "en" ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <FileText className="w-4 h-4 ml-1.5" />}
+                    Download JD (English)
+                  </Button>
                 <>
                   <Button onClick={cancelEditAnalysis} variant="outline" size="sm" disabled={savingAnalysis}>
                     <X className="w-4 h-4 ml-1.5" /> إلغاء
