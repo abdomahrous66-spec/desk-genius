@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.parse-job-doc]
 verify_jwt = false
+
+[functions.translate-jd]
+verify_jwt = false

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import competenciesData from "./data/competencies.json" with { type: "json" };
+import { callGemini, parseJsonLoose } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,8 +30,6 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
     // --- AUTH CHECK ---
     const authHeader = req.headers.get("Authorization");
@@ -146,44 +145,25 @@ CRITICAL RULES:
 - "kpis": only if manager provided; else [].
 - ALL text content in ${langInstr}.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You are an expert HR consultant. Always return ONLY valid JSON matching the requested shape — no markdown fences, no commentary." },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
+    let aiText: string;
+    try {
+      aiText = await callGemini({
+        system: "You are an expert HR consultant. Always return ONLY valid JSON matching the requested shape — no markdown fences, no commentary.",
+        user: userPrompt,
+        json: true,
         temperature: 0.4,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const t = await aiResponse.text();
-      console.error("AI Gateway error:", aiResponse.status, t);
-      const status = aiResponse.status;
-      const msg = status === 429 ? "حد الاستخدام ـ جرب بعد دقيقة"
-        : status === 402 ? "نفد رصيد الـ AI — اشحن من إعدادات Lovable Cloud"
-        : "خطأ في خدمة الـ AI";
+        model: "gemini-2.0-flash",
+      });
+    } catch (aiErr) {
+      const msg = aiErr instanceof Error ? aiErr.message : "خطأ في خدمة الـ AI";
+      console.error("Gemini error:", msg);
       await supabase.from("job_analyses").update({ status: "error", analysis_result: msg }).eq("id", analysisId);
-      return new Response(JSON.stringify({ error: msg, detail: t }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    const aiData = await aiResponse.json();
-    const text: string | undefined = aiData?.choices?.[0]?.message?.content;
-    if (!text) throw new Error("AI returned no content");
-
-    let parsed: { analysis_markdown: string; jd: Record<string, unknown> };
-    try { parsed = JSON.parse(text); }
-    catch {
-      const clean = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
-      parsed = JSON.parse(clean);
-    }
+    const parsed = parseJsonLoose<{ analysis_markdown: string; jd: Record<string, unknown> }>(aiText);
 
     const analysisMarkdown: string = parsed.analysis_markdown;
     // deno-lint-ignore no-explicit-any

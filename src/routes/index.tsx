@@ -119,6 +119,11 @@ function Index() {
                   <Layers className="w-5 h-5 ml-2" /> الهيكل التنظيمي
                 </Button>
               </Link>
+              <Link to="/admin/structure">
+                <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                  <Layers className="w-5 h-5 ml-2" /> إدارة الهيكل
+                </Button>
+              </Link>
               <Link to="/users">
                 <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
                   <Users className="w-5 h-5 ml-2" /> إدارة المستخدمين
