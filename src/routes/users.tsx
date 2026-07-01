@@ -156,7 +156,7 @@ function UsersPage() {
                       {r.role !== "admin" && (
                         <ScopesDialog userId={r.user_id} username={r.username} currentScopes={userScopes} onSaved={load} />
                       )}
-                      {r.username !== "Abdo123" && (
+                      {r.role !== "admin" && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" disabled={deletingId === r.user_id}>

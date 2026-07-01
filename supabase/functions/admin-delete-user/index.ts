@@ -29,12 +29,6 @@ Deno.serve(async (req) => {
     if (!target_user_id) return new Response(JSON.stringify({ error: "target_user_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (target_user_id === userData.user.id) return new Response(JSON.stringify({ error: "Can't delete yourself" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    // Protect the super-admin (Abdo123): only he can delete himself (blocked above anyway)
-    const { data: targetProfile } = await admin.from("profiles").select("username").eq("user_id", target_user_id).maybeSingle();
-    if (targetProfile?.username === "Abdo123") {
-      return new Response(JSON.stringify({ error: "لا يمكن حذف المستخدم الرئيسي" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
     const { error } = await admin.auth.admin.deleteUser(target_user_id);
     if (error) throw error;
 
