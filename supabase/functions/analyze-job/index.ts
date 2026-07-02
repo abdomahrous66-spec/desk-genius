@@ -137,8 +137,8 @@ Return ONLY a valid JSON object (no markdown fences, no commentary) with exactly
 
 CRITICAL RULES:
 - "location": exactly "${input.location || "Borg"}".
-- "reports": use EXACT manager list. Skip rows whose name is "N/A". Do not invent extras.
-- "position_dimensions": use manager values (split into bullet arrays). If "N/A" return ["N/A"].
+- "reports": if manager list is non-empty and not all N/A, use it EXACTLY. If empty or all N/A, GENERATE 2-4 realistic reports for this role — NEVER return [].
+- "position_dimensions": ALWAYS populate all 4 keys with realistic bullets. Infer from role seniority when manager didn't provide. Non-managerial roles get realistic limited-authority bullets (e.g. ["Executes tasks within defined SOPs", "No direct budget authority"]) — do NOT return ["N/A"] except when truly impossible.
 - "structure_boxes": ALWAYS populate. manager = Reports-To title, position = job title, subordinates = list.
 - "key_result_areas": 5-8 KRAs (each 4-8 responsibilities, 3-6 KRAs).
 - "hse_kra": MANDATORY. Health/Safety/Environment block (4-7 responsibilities + 3-5 KRAs).
