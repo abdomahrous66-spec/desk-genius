@@ -232,7 +232,6 @@ function AdminStructurePage() {
                   <th className="text-right p-2">Sector</th>
                   <th className="text-right p-2">Department</th>
                   <th className="text-right p-2">Section</th>
-                  <th className="text-right p-2">Subsection</th>
                   <th className="text-right p-2">Position</th>
                   <th className="text-right p-2">Manager</th>
                   <th className="p-2"></th>
@@ -244,7 +243,6 @@ function AdminStructurePage() {
                     <td className="p-2">{p.sector || "-"}</td>
                     <td className="p-2">{p.department || "-"}</td>
                     <td className="p-2">{p.section || "-"}</td>
-                    <td className="p-2">{p.subsection || "-"}</td>
                     <td className="p-2 font-medium">{p.position_title}</td>
                     <td className="p-2 text-muted-foreground">{p.manager_position || "-"}</td>
                     <td className="p-2 text-left">
