@@ -115,17 +115,21 @@ function AdminStructurePage() {
       const rowsForDb = rows
         .map(r => ({
           company_id: companyId,
-          sector: pick(r, "sector", "قطاع", "Sector"),
-          department: pick(r, "department", "إدارة", "ادارة"),
-          section: pick(r, "section", "قسم"),
-          subsection: pick(r, "subsection", "sub-section", "subSection", "قسم فرعي"),
-          position_title: pick(r, "position", "position_title", "positiontitle", "job_title", "jobtitle", "الوظيفة", "اسم الوظيفة"),
-          manager_position: pick(r, "manager", "manager_position", "managerposition", "reports to", "reportsto", "المدير"),
-          job_code: pick(r, "job_code", "jobcode", "code", "كود"),
+          sector: pick(r, "sector", "قطاع", "القطاع", "Sector"),
+          department: pick(r, "department", "إدارة", "ادارة", "الإدارة", "الادارة", "قسم رئيسي"),
+          section: pick(r, "section", "قسم", "القسم"),
+          subsection: pick(r, "subsection", "sub-section", "subSection", "قسم فرعي", "القسم الفرعي"),
+          position_title: pick(r, "position", "position_title", "positiontitle", "job_title", "jobtitle", "الوظيفة", "اسم الوظيفة", "المسمى الوظيفي", "المسمي الوظيفي", "job title"),
+          manager_position: pick(r, "manager", "manager_position", "managerposition", "reports to", "reportsto", "المدير", "المدير المباشر", "ال مدير"),
+          job_code: pick(r, "job_code", "jobcode", "code", "كود", "الكود"),
         }))
         .filter(r => r.position_title);
 
-      if (rowsForDb.length === 0) { toast.error("الملف فاضي أو الأعمدة مش معروفة"); return; }
+      if (rowsForDb.length === 0) {
+        const firstRowKeys = rows[0] ? Object.keys(rows[0]).join(", ") : "(الملف فاضي)";
+        toast.error(`مفيش عمود اسم وظيفة معروف. الأعمدة الموجودة: ${firstRowKeys}`);
+        return;
+      }
 
       // Replace strategy: delete existing for this company, then insert all
       const sb = supabase as unknown as {
