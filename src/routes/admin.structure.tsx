@@ -149,7 +149,12 @@ function AdminStructurePage() {
           job_code: r.job_code || null,
         }));
         const ins = await sb.from("positions").insert(slice);
-        if (ins.error) { console.error(ins.error); toast.error(`فشل الإدخال عند الصف ${i}`); return; }
+        if (ins.error) {
+          console.error(ins.error);
+          const em = (ins.error as { message?: string })?.message || "Unknown DB error";
+          toast.error(`فشل الإدخال عند الصف ${i}: ${em}`);
+          return;
+        }
       }
       toast.success(`تم تحديث ${rowsForDb.length} وظيفة`);
       reload();
