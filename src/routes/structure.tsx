@@ -109,7 +109,7 @@ function StructurePage() {
           <h1 className="text-3xl md:text-4xl font-bold mb-2 inline-flex items-center gap-3">
             <Layers className="w-8 h-8 text-primary" /> {GROUP_NAME}
           </h1>
-          <p className="text-muted-foreground">الهيكل التنظيمي الكامل — شركة → قطاع → إدارة → قسم → قسم فرعي → وظيفة.</p>
+          <p className="text-muted-foreground">الهيكل التنظيمي — شركة → قطاع → إدارة → قسم → وظيفة.</p>
         </div>
 
         <Card className="p-3 mb-6">
