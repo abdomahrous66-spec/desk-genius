@@ -97,14 +97,15 @@ Manager input:
 - KPIs (if empty, return []): ${input.kpis || "(EMPTY - return [])"}
 - Notes: ${input.notes || "None"}
 
-Manager-provided REPORTS (use exactly, do not invent more):
+Manager-provided REPORTS:
 ${JSON.stringify(reportsInput, null, 2)}
+- If the list above is empty OR every row is "N/A", GENERATE 2-4 realistic reports typical for this role (name, frequency, purpose, presented_to). Do NOT leave reports as [].
 
-Manager-provided POSITION DIMENSIONS (split each into bullet array; if "N/A" return ["N/A"]):
-- level_of_authority: ${pdInput.level_of_authority || "N/A"}
-- financial_control: ${pdInput.financial_control || "N/A"}
-- annual_amount: ${pdInput.annual_amount || "N/A"}
-- hiring_promotion_authority: ${pdInput.hiring_promotion_authority || "N/A"}
+Manager-provided POSITION DIMENSIONS (if "N/A" or missing, INFER from role seniority & context — do not return ["N/A"] unless the role truly has no authority at all, e.g. junior IC roles where financial/hiring authority is genuinely nil; even then write a short realistic bullet like ["No direct financial authority"]):
+- level_of_authority: ${pdInput.level_of_authority || "N/A — infer 2-4 bullets from role seniority"}
+- financial_control: ${pdInput.financial_control || "N/A — infer or write realistic 'No direct budget authority' style bullet"}
+- annual_amount: ${pdInput.annual_amount || "N/A — infer approx budget scope if managerial, else ['N/A']"}
+- hiring_promotion_authority: ${pdInput.hiring_promotion_authority || "N/A — infer (e.g. 'Recommends hiring decisions to manager') for non-managers"}
 
 ${compHint}
 
@@ -136,8 +137,8 @@ Return ONLY a valid JSON object (no markdown fences, no commentary) with exactly
 
 CRITICAL RULES:
 - "location": exactly "${input.location || "Borg"}".
-- "reports": use EXACT manager list. Skip rows whose name is "N/A". Do not invent extras.
-- "position_dimensions": use manager values (split into bullet arrays). If "N/A" return ["N/A"].
+- "reports": if manager list is non-empty and not all N/A, use it EXACTLY. If empty or all N/A, GENERATE 2-4 realistic reports for this role — NEVER return [].
+- "position_dimensions": ALWAYS populate all 4 keys with realistic bullets. Infer from role seniority when manager didn't provide. Non-managerial roles get realistic limited-authority bullets (e.g. ["Executes tasks within defined SOPs", "No direct budget authority"]) — do NOT return ["N/A"] except when truly impossible.
 - "structure_boxes": ALWAYS populate. manager = Reports-To title, position = job title, subordinates = list.
 - "key_result_areas": 5-8 KRAs (each 4-8 responsibilities, 3-6 KRAs).
 - "hse_kra": MANDATORY. Health/Safety/Environment block (4-7 responsibilities + 3-5 KRAs).

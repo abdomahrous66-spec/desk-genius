@@ -109,7 +109,7 @@ function StructurePage() {
           <h1 className="text-3xl md:text-4xl font-bold mb-2 inline-flex items-center gap-3">
             <Layers className="w-8 h-8 text-primary" /> {GROUP_NAME}
           </h1>
-          <p className="text-muted-foreground">الهيكل التنظيمي الكامل — شركة → قطاع → إدارة → قسم → قسم فرعي → وظيفة.</p>
+          <p className="text-muted-foreground">الهيكل التنظيمي — شركة → قطاع → إدارة → قسم → وظيفة.</p>
         </div>
 
         <Card className="p-3 mb-6">
@@ -211,38 +211,38 @@ function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApp
         <div className="border-t border-border/60 px-3 py-2 space-y-2 bg-background/40">
           {depts.map(d => (
             <Branch key={d} levelKey={`${key}|d:${d}`} title={display(d)} isOpen={isOpen} toggle={toggle}>
-              {Object.keys(tree[d]).sort().map(s => (
-                <Branch key={s} levelKey={`${key}|d:${d}|s:${s}`} title={display(s)} indent isOpen={isOpen} toggle={toggle}>
-                  {Object.keys(tree[d][s]).sort().map(ss => (
-                    <Branch key={ss} levelKey={`${key}|d:${d}|s:${s}|ss:${ss}`} title={display(ss)} indent isOpen={isOpen} toggle={toggle}>
-                      <ul className="divide-y divide-border/60">
-                        {tree[d][s][ss].map(p => {
-                          const approvedId = findApproved(company.id, sector, d, s, ss, p.position_title);
-                          if (q && !p.position_title.toLowerCase().includes(q) && !display(d).toLowerCase().includes(q) && !display(s).toLowerCase().includes(q) && !display(ss).toLowerCase().includes(q) && !display(sector).toLowerCase().includes(q)) return null;
-                          return (
-                            <li key={p.id} className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-accent/10">
-                              <span className="text-sm flex items-center gap-2">
-                                {p.position_title}
-                                {approvedId && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-success/10 text-success">JD معتمد</span>}
-                              </span>
-                              <div className="flex items-center gap-1.5">
-                                {approvedId && (
-                                  <Button size="sm" variant="secondary" onClick={() => onView(approvedId)} className="gap-1.5">
-                                    <FileCheck2 className="w-4 h-4" /> عرض JD
-                                  </Button>
-                                )}
-                                <Button size="sm" variant="outline" onClick={() => goCreate(company.id, sector, d, p.position_title)} className="gap-1.5">
-                                  <FilePlus2 className="w-4 h-4" /> إنشاء JD
+              {Object.keys(tree[d]).sort().map(s => {
+                // Flatten all subsections into a single position list under Section
+                const allPositions = Object.values(tree[d][s]).flat();
+                return (
+                  <Branch key={s} levelKey={`${key}|d:${d}|s:${s}`} title={display(s)} indent isOpen={isOpen} toggle={toggle}>
+                    <ul className="divide-y divide-border/60">
+                      {allPositions.map(p => {
+                        const approvedId = findApproved(company.id, sector, d, s, p.subsection || "", p.position_title);
+                        if (q && !p.position_title.toLowerCase().includes(q) && !display(d).toLowerCase().includes(q) && !display(s).toLowerCase().includes(q) && !display(sector).toLowerCase().includes(q)) return null;
+                        return (
+                          <li key={p.id} className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-accent/10">
+                            <span className="text-sm flex items-center gap-2">
+                              {p.position_title}
+                              {approvedId && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-success/10 text-success">JD معتمد</span>}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {approvedId && (
+                                <Button size="sm" variant="secondary" onClick={() => onView(approvedId)} className="gap-1.5">
+                                  <FileCheck2 className="w-4 h-4" /> عرض JD
                                 </Button>
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </Branch>
-                  ))}
-                </Branch>
-              ))}
+                              )}
+                              <Button size="sm" variant="outline" onClick={() => goCreate(company.id, sector, d, p.position_title)} className="gap-1.5">
+                                <FilePlus2 className="w-4 h-4" /> إنشاء JD
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </Branch>
+                );
+              })}
             </Branch>
           ))}
         </div>

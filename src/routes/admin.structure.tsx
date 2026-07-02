@@ -115,17 +115,21 @@ function AdminStructurePage() {
       const rowsForDb = rows
         .map(r => ({
           company_id: companyId,
-          sector: pick(r, "sector", "قطاع", "Sector"),
-          department: pick(r, "department", "إدارة", "ادارة"),
-          section: pick(r, "section", "قسم"),
-          subsection: pick(r, "subsection", "sub-section", "subSection", "قسم فرعي"),
-          position_title: pick(r, "position", "position_title", "positiontitle", "job_title", "jobtitle", "الوظيفة", "اسم الوظيفة"),
-          manager_position: pick(r, "manager", "manager_position", "managerposition", "reports to", "reportsto", "المدير"),
-          job_code: pick(r, "job_code", "jobcode", "code", "كود"),
+          sector: pick(r, "sector", "قطاع", "القطاع", "Sector"),
+          department: pick(r, "department", "إدارة", "ادارة", "الإدارة", "الادارة", "قسم رئيسي"),
+          section: pick(r, "section", "قسم", "القسم"),
+          subsection: pick(r, "subsection", "sub-section", "subSection", "قسم فرعي", "القسم الفرعي"),
+          position_title: pick(r, "position", "position_title", "positiontitle", "job_title", "jobtitle", "الوظيفة", "اسم الوظيفة", "المسمى الوظيفي", "المسمي الوظيفي", "job title"),
+          manager_position: pick(r, "manager", "manager_position", "managerposition", "reports to", "reportsto", "المدير", "المدير المباشر", "ال مدير"),
+          job_code: pick(r, "job_code", "jobcode", "code", "كود", "الكود"),
         }))
         .filter(r => r.position_title);
 
-      if (rowsForDb.length === 0) { toast.error("الملف فاضي أو الأعمدة مش معروفة"); return; }
+      if (rowsForDb.length === 0) {
+        const firstRowKeys = rows[0] ? Object.keys(rows[0]).join(", ") : "(الملف فاضي)";
+        toast.error(`مفيش عمود اسم وظيفة معروف. الأعمدة الموجودة: ${firstRowKeys}`);
+        return;
+      }
 
       // Replace strategy: delete existing for this company, then insert all
       const sb = supabase as unknown as {
@@ -149,7 +153,12 @@ function AdminStructurePage() {
           job_code: r.job_code || null,
         }));
         const ins = await sb.from("positions").insert(slice);
-        if (ins.error) { console.error(ins.error); toast.error(`فشل الإدخال عند الصف ${i}`); return; }
+        if (ins.error) {
+          console.error(ins.error);
+          const em = (ins.error as { message?: string })?.message || "Unknown DB error";
+          toast.error(`فشل الإدخال عند الصف ${i}: ${em}`);
+          return;
+        }
       }
       toast.success(`تم تحديث ${rowsForDb.length} وظيفة`);
       reload();
@@ -190,7 +199,7 @@ function AdminStructurePage() {
             <Button variant="outline" onClick={() => reload()} className="gap-2"><RefreshCw className="w-4 h-4" /> تحديث</Button>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            الأعمدة المتوقعة: Sector, Department, Section, Subsection, Position (الإجباري), Manager, Job Code. يدعم العربية والإنجليزية.
+            الأعمدة المتوقعة: Sector, Department, Section, Position (الإجباري), Manager, Job Code. يدعم العربية والإنجليزية. (Subsection اختياري لو موجود في الشيت هيتحفظ.)
           </p>
         </Card>
 
@@ -207,7 +216,6 @@ function AdminStructurePage() {
             <div><Label>Sector *</Label><Input value={newRow.sector} onChange={(e) => setNewRow({ ...newRow, sector: e.target.value })} /></div>
             <div><Label>Department</Label><Input value={newRow.department} onChange={(e) => setNewRow({ ...newRow, department: e.target.value })} /></div>
             <div><Label>Section</Label><Input value={newRow.section} onChange={(e) => setNewRow({ ...newRow, section: e.target.value })} /></div>
-            <div><Label>Subsection</Label><Input value={newRow.subsection} onChange={(e) => setNewRow({ ...newRow, subsection: e.target.value })} /></div>
             <div><Label>Manager (Reports To)</Label><Input value={newRow.manager_position} onChange={(e) => setNewRow({ ...newRow, manager_position: e.target.value })} /></div>
             <div className="md:col-span-2"><Label>Position Title *</Label><Input value={newRow.position_title} onChange={(e) => setNewRow({ ...newRow, position_title: e.target.value })} /></div>
             <div><Label>Job Code</Label><Input value={newRow.job_code} onChange={(e) => setNewRow({ ...newRow, job_code: e.target.value })} /></div>
@@ -224,7 +232,6 @@ function AdminStructurePage() {
                   <th className="text-right p-2">Sector</th>
                   <th className="text-right p-2">Department</th>
                   <th className="text-right p-2">Section</th>
-                  <th className="text-right p-2">Subsection</th>
                   <th className="text-right p-2">Position</th>
                   <th className="text-right p-2">Manager</th>
                   <th className="p-2"></th>
@@ -236,7 +243,6 @@ function AdminStructurePage() {
                     <td className="p-2">{p.sector || "-"}</td>
                     <td className="p-2">{p.department || "-"}</td>
                     <td className="p-2">{p.section || "-"}</td>
-                    <td className="p-2">{p.subsection || "-"}</td>
                     <td className="p-2 font-medium">{p.position_title}</td>
                     <td className="p-2 text-muted-foreground">{p.manager_position || "-"}</td>
                     <td className="p-2 text-left">
