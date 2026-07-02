@@ -199,7 +199,7 @@ function AdminStructurePage() {
             <Button variant="outline" onClick={() => reload()} className="gap-2"><RefreshCw className="w-4 h-4" /> تحديث</Button>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            الأعمدة المتوقعة: Sector, Department, Section, Subsection, Position (الإجباري), Manager, Job Code. يدعم العربية والإنجليزية.
+            الأعمدة المتوقعة: Sector, Department, Section, Position (الإجباري), Manager, Job Code. يدعم العربية والإنجليزية. (Subsection اختياري لو موجود في الشيت هيتحفظ.)
           </p>
         </Card>
 
