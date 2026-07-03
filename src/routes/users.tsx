@@ -29,7 +29,7 @@ export const Route = createFileRoute("/users")({
   ),
 });
 
-type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; role: string };
+type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; roles: string[] };
 type ScopeRow = { user_id: string; company_id: string | null; sector: string | null; department: string | null };
 
 const scopesTable = () => (supabase as unknown as {
@@ -41,6 +41,7 @@ const scopesTable = () => (supabase as unknown as {
 }).from("user_scopes");
 
 function UsersPage() {
+  const auth = useAuth();
   const [rows, setRows] = useState<Manager[]>([]);
   const [scopes, setScopes] = useState<ScopeRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,21 +50,28 @@ function UsersPage() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [newRole, setNewRole] = useState<"manager" | "admin">("manager");
 
   const load = async () => {
     setLoading(true);
     const { data: roles } = await supabase.from("user_roles").select("user_id, role, created_at");
-    const ids = (roles ?? []).map((r) => r.user_id);
+    const map = new Map<string, Manager>();
+    for (const r of roles ?? []) {
+      const cur = map.get(r.user_id);
+      if (cur) cur.roles.push(r.role);
+      else map.set(r.user_id, { user_id: r.user_id, roles: [r.role], created_at: r.created_at, username: "—", display_name: null });
+    }
+    const ids = Array.from(map.keys());
     if (ids.length === 0) { setRows([]); setLoading(false); return; }
     const { data: profiles } = await supabase.from("profiles").select("user_id, username, display_name").in("user_id", ids);
-    const merged: Manager[] = (roles ?? []).map((r) => {
-      const p = profiles?.find((x) => x.user_id === r.user_id);
-      return {
-        user_id: r.user_id, role: r.role,
-        username: p?.username ?? "—", display_name: p?.display_name ?? null,
-        created_at: r.created_at,
-      };
-    }).sort((a, b) => a.role === "admin" ? -1 : b.role === "admin" ? 1 : 0);
+    for (const p of profiles ?? []) {
+      const m = map.get(p.user_id);
+      if (m) { m.username = p.username ?? "—"; m.display_name = p.display_name ?? null; }
+    }
+    const merged = Array.from(map.values()).sort((a, b) => {
+      const rank = (r: string[]) => r.includes("super_admin") ? 0 : r.includes("admin") ? 1 : 2;
+      return rank(a.roles) - rank(b.roles);
+    });
     setRows(merged);
     const { data: sc } = await scopesTable().select("user_id,company_id,sector,department");
     setScopes(sc ?? []);
@@ -77,7 +85,7 @@ function UsersPage() {
     if (!username.trim() || !password) return;
     setCreating(true);
     const { data, error } = await supabase.functions.invoke("admin-create-user", {
-      body: { username: username.trim(), password, display_name: displayName.trim() || username.trim() },
+      body: { username: username.trim(), password, display_name: displayName.trim() || username.trim(), role: newRole },
     });
     setCreating(false);
     if (error || (data as { error?: string })?.error) {
@@ -85,7 +93,7 @@ function UsersPage() {
       return;
     }
     toast.success("تم إنشاء المستخدم");
-    setUsername(""); setDisplayName(""); setPassword("");
+    setUsername(""); setDisplayName(""); setPassword(""); setNewRole("manager");
     load();
   };
 
