@@ -13,10 +13,13 @@ export function RequireAuth({
     if (auth.loading) return;
     if (!auth.user) { nav({ to: "/login" }); return; }
     if (!auth.role) { nav({ to: "/login" }); return; }
-    if (requireRole && auth.role !== requireRole) { nav({ to: "/" }); }
+    // "admin" requirement is satisfied by super_admin too
+    const ok = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin);
+    if (!ok) { nav({ to: "/" }); }
   }, [auth, requireRole, nav]);
 
-  if (auth.loading || !auth.user || !auth.role || (requireRole && auth.role !== requireRole)) {
+  const roleOk = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin);
+  if (auth.loading || !auth.user || !auth.role || !roleOk) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
