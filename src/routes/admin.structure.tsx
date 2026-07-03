@@ -54,9 +54,41 @@ function AdminStructurePage() {
 
   const filtered = companyId ? positions.filter(p => p.company_id === companyId) : positions;
 
+  // ------- Companies management -------
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [creatingCompany, setCreatingCompany] = useState(false);
+  const rootCompany = companies.find(c => !c.parent_id);
+
+  const createCompany = async () => {
+    const name = newCompanyName.trim();
+    if (!name) return;
+    setCreatingCompany(true);
+    const sb = supabase as unknown as {
+      from: (t: string) => { insert: (r: unknown) => { select: () => { single: () => Promise<{ data: { id: string } | null; error: unknown }> } } };
+    };
+    const { error } = await sb.from("companies").insert({
+      name, parent_id: rootCompany?.id ?? null, sort_order: companies.length,
+    }).select().single();
+    setCreatingCompany(false);
+    if (error) { toast.error("فشل إضافة الشركة"); return; }
+    toast.success("تمت إضافة الشركة");
+    setNewCompanyName("");
+    reload();
+  };
+
+  const deleteCompany = async (id: string) => {
+    const hasPositions = positions.some(p => p.company_id === id);
+    if (hasPositions) { toast.error("امسح الوظائف الأول"); return; }
+    if (!confirm("حذف الشركة نهائياً؟")) return;
+    const { error } = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
+      .from("companies").delete().eq("id", id);
+    if (error) { toast.error("فشل الحذف"); return; }
+    toast.success("تم الحذف"); reload();
+  };
+
   const addPosition = async () => {
-    if (!newRow.company_id || !newRow.sector || !newRow.position_title) {
-      toast.error("الشركة + القطاع + اسم الوظيفة إجباري");
+    if (!newRow.company_id || !newRow.position_title) {
+      toast.error("الشركة + اسم الوظيفة إجباري");
       return;
     }
     setBusy(true);
