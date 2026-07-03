@@ -54,41 +54,9 @@ function AdminStructurePage() {
 
   const filtered = companyId ? positions.filter(p => p.company_id === companyId) : positions;
 
-  // ------- Companies management -------
-  const [newCompanyName, setNewCompanyName] = useState("");
-  const [creatingCompany, setCreatingCompany] = useState(false);
-  const rootCompany = companies.find(c => !c.parent_id);
-
-  const createCompany = async () => {
-    const name = newCompanyName.trim();
-    if (!name) return;
-    setCreatingCompany(true);
-    const sb = supabase as unknown as {
-      from: (t: string) => { insert: (r: unknown) => { select: () => { single: () => Promise<{ data: { id: string } | null; error: unknown }> } } };
-    };
-    const { error } = await sb.from("companies").insert({
-      name, parent_id: rootCompany?.id ?? null, sort_order: companies.length,
-    }).select().single();
-    setCreatingCompany(false);
-    if (error) { toast.error("فشل إضافة الشركة"); return; }
-    toast.success("تمت إضافة الشركة");
-    setNewCompanyName("");
-    reload();
-  };
-
-  const deleteCompany = async (id: string) => {
-    const hasPositions = positions.some(p => p.company_id === id);
-    if (hasPositions) { toast.error("امسح الوظائف الأول"); return; }
-    if (!confirm("حذف الشركة نهائياً؟")) return;
-    const { error } = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
-      .from("companies").delete().eq("id", id);
-    if (error) { toast.error("فشل الحذف"); return; }
-    toast.success("تم الحذف"); reload();
-  };
-
   const addPosition = async () => {
-    if (!newRow.company_id || !newRow.position_title) {
-      toast.error("الشركة + اسم الوظيفة إجباري");
+    if (!newRow.company_id || !newRow.sector || !newRow.position_title) {
+      toast.error("الشركة + القطاع + اسم الوظيفة إجباري");
       return;
     }
     setBusy(true);
@@ -128,82 +96,40 @@ function AdminStructurePage() {
       const XLSX = await import("xlsx");
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 
-      const norm = (k: unknown) => String(k ?? "").trim().toLowerCase().replace(/[\s_\-()،,./]+/g, "");
-      const HEADER_ALIASES: Record<string, string[]> = {
-        sector: ["sector", "قطاع", "القطاع"],
-        department: ["department", "dept", "إدارة", "ادارة", "الإدارة", "الادارة", "قسمرئيسي"],
-        section: ["section", "قسم", "القسم"],
-        subsection: ["subsection", "قسمفرعي", "القسمفرعي", "القسمالفرعي"],
-        position_title: ["position", "positiontitle", "jobtitle", "jobposition", "job", "الوظيفة", "اسمالوظيفة", "المسمىالوظيفي", "المسميالوظيفي", "المسمى", "وظيفة"],
-        manager_position: ["manager", "managerposition", "reportsto", "reportto", "reportingto", "line manager", "linemanager", "المدير", "المديرالمباشر", "الرئيسالمباشر", "يتبع", "تبعية", "رئيسمباشر"],
-        job_code: ["jobcode", "code", "كود", "الكود", "رمز"],
-      };
-      const matchHeader = (cell: unknown): string | null => {
-        const n = norm(cell);
-        if (!n) return null;
-        for (const [dbCol, aliases] of Object.entries(HEADER_ALIASES)) {
-          if (aliases.some(a => norm(a) === n || n.includes(norm(a)))) return dbCol;
+      const norm = (k: string) => k.toString().trim().toLowerCase().replace(/[\s_-]+/g, "");
+      const pick = (r: Record<string, unknown>, ...keys: string[]) => {
+        for (const want of keys) {
+          for (const k of Object.keys(r)) {
+            if (norm(k) === norm(want)) {
+              const v = r[k];
+              return v == null ? "" : String(v).trim();
+            }
+          }
         }
-        return null;
+        return "";
       };
 
-      const collected: Array<Record<string, string>> = [];
-      const sheetsScanned: string[] = [];
-      const sheetsSkipped: Array<{ name: string; reason: string }> = [];
+      const rowsForDb = rows
+        .map(r => ({
+          company_id: companyId,
+          sector: pick(r, "sector", "قطاع", "القطاع", "Sector"),
+          department: pick(r, "department", "إدارة", "ادارة", "الإدارة", "الادارة", "قسم رئيسي"),
+          section: pick(r, "section", "قسم", "القسم"),
+          subsection: pick(r, "subsection", "sub-section", "subSection", "قسم فرعي", "القسم الفرعي"),
+          position_title: pick(r, "position", "position_title", "positiontitle", "job_title", "jobtitle", "الوظيفة", "اسم الوظيفة", "المسمى الوظيفي", "المسمي الوظيفي", "job title"),
+          manager_position: pick(r, "manager", "manager_position", "managerposition", "reports to", "reportsto", "المدير", "المدير المباشر", "ال مدير"),
+          job_code: pick(r, "job_code", "jobcode", "code", "كود", "الكود"),
+        }))
+        .filter(r => r.position_title);
 
-      for (const sheetName of wb.SheetNames) {
-        sheetsScanned.push(sheetName);
-        const sheet = wb.Sheets[sheetName];
-        // Read as 2D array with blank rows preserved
-        const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", blankrows: false }) as unknown[][];
-        if (!aoa.length) { sheetsSkipped.push({ name: sheetName, reason: "فاضي" }); continue; }
-
-        // Find header row: the row containing the largest number of recognized headers (min 2, must contain position_title)
-        let bestRowIdx = -1, bestScore = 0, bestMap: Record<number, string> = {};
-        for (let i = 0; i < Math.min(aoa.length, 15); i++) {
-          const row = aoa[i] ?? [];
-          const map: Record<number, string> = {};
-          for (let c = 0; c < row.length; c++) {
-            const key = matchHeader(row[c]);
-            if (key && !Object.values(map).includes(key)) map[c] = key;
-          }
-          const score = Object.keys(map).length;
-          const hasPos = Object.values(map).includes("position_title");
-          if (hasPos && score > bestScore) { bestScore = score; bestRowIdx = i; bestMap = map; }
-        }
-        if (bestRowIdx < 0) {
-          sheetsSkipped.push({ name: sheetName, reason: "مافيش عمود اسم وظيفة" });
-          continue;
-        }
-
-        for (let i = bestRowIdx + 1; i < aoa.length; i++) {
-          const row = aoa[i] ?? [];
-          const obj: Record<string, string> = {};
-          for (const [colIdxStr, dbCol] of Object.entries(bestMap)) {
-            const v = row[Number(colIdxStr)];
-            obj[dbCol] = v == null ? "" : String(v).trim();
-          }
-          if (obj.position_title) collected.push(obj);
-        }
-      }
-
-      if (collected.length === 0) {
-        const summary = sheetsSkipped.map(s => `«${s.name}» (${s.reason})`).join("، ");
-        toast.error(`مالقيتش وظائف. الشيتات: ${summary || sheetsScanned.join("، ")}`);
+      if (rowsForDb.length === 0) {
+        const firstRowKeys = rows[0] ? Object.keys(rows[0]).join(", ") : "(الملف فاضي)";
+        toast.error(`مفيش عمود اسم وظيفة معروف. الأعمدة الموجودة: ${firstRowKeys}`);
         return;
       }
-
-      const rowsForDb = collected.map(r => ({
-        company_id: companyId,
-        sector: r.sector || null,
-        department: r.department || null,
-        section: r.section || null,
-        subsection: r.subsection || null,
-        position_title: r.position_title,
-        manager_position: r.manager_position || null,
-        job_code: r.job_code || null,
-      }));
 
       // Replace strategy: delete existing for this company, then insert all
       const sb = supabase as unknown as {
@@ -215,15 +141,26 @@ function AdminStructurePage() {
       const del = await sb.from("positions").delete().eq("company_id", companyId);
       if (del.error) { toast.error("فشل حذف الموجود"); return; }
 
+      // chunk inserts
       for (let i = 0; i < rowsForDb.length; i += 500) {
-        const ins = await sb.from("positions").insert(rowsForDb.slice(i, i + 500));
+        const slice = rowsForDb.slice(i, i + 500).map(r => ({
+          ...r,
+          sector: r.sector || null,
+          department: r.department || null,
+          section: r.section || null,
+          subsection: r.subsection || null,
+          manager_position: r.manager_position || null,
+          job_code: r.job_code || null,
+        }));
+        const ins = await sb.from("positions").insert(slice);
         if (ins.error) {
+          console.error(ins.error);
           const em = (ins.error as { message?: string })?.message || "Unknown DB error";
           toast.error(`فشل الإدخال عند الصف ${i}: ${em}`);
           return;
         }
       }
-      toast.success(`تم استيراد ${rowsForDb.length} وظيفة من ${sheetsScanned.length - sheetsSkipped.length} شيت`);
+      toast.success(`تم تحديث ${rowsForDb.length} وظيفة`);
       reload();
     } catch (err) {
       console.error(err);
@@ -241,31 +178,7 @@ function AdminStructurePage() {
           <ArrowRight className="w-4 h-4" /> الرئيسية
         </Link>
         <h1 className="text-3xl font-bold mb-2">إدارة الهيكل التنظيمي</h1>
-        <p className="text-muted-foreground mb-6">إنشاء شركات، رفع شيت Excel لتحديث الهيكل تلقائياً، أو إضافة/حذف وظائف يدوياً.</p>
-
-        <Card className="p-5 mb-6">
-          <h2 className="font-bold mb-3 flex items-center gap-2"><Plus className="w-4 h-4" /> الشركات</h2>
-          <div className="flex flex-wrap items-end gap-3 mb-4">
-            <div className="flex-1 min-w-[220px]">
-              <Label>اسم شركة جديدة</Label>
-              <Input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} placeholder="مثال: شركة X" />
-            </div>
-            <Button onClick={createCompany} disabled={creatingCompany || !newCompanyName.trim()} className="gap-2">
-              {creatingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} إضافة شركة
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {childCompanies.map(c => (
-              <div key={c.id} className="inline-flex items-center gap-1 bg-accent/40 rounded-full px-3 py-1 text-sm">
-                <span>{c.name}</span>
-                <button onClick={() => deleteCompany(c.id)} className="text-destructive hover:text-destructive/80" title="حذف الشركة">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-            {childCompanies.length === 0 && <span className="text-xs text-muted-foreground">مافيش شركات لسه.</span>}
-          </div>
-        </Card>
+        <p className="text-muted-foreground mb-6">رفع شيت Excel لتحديث الهيكل تلقائياً أو إضافة/حذف وظائف يدوياً.</p>
 
         <Card className="p-5 mb-6">
           <div className="flex flex-wrap items-end gap-3">
@@ -300,7 +213,7 @@ function AdminStructurePage() {
                 <SelectContent>{childCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><Label>Sector</Label><Input value={newRow.sector} onChange={(e) => setNewRow({ ...newRow, sector: e.target.value })} /></div>
+            <div><Label>Sector *</Label><Input value={newRow.sector} onChange={(e) => setNewRow({ ...newRow, sector: e.target.value })} /></div>
             <div><Label>Department</Label><Input value={newRow.department} onChange={(e) => setNewRow({ ...newRow, department: e.target.value })} /></div>
             <div><Label>Section</Label><Input value={newRow.section} onChange={(e) => setNewRow({ ...newRow, section: e.target.value })} /></div>
             <div><Label>Manager (Reports To)</Label><Input value={newRow.manager_position} onChange={(e) => setNewRow({ ...newRow, manager_position: e.target.value })} /></div>

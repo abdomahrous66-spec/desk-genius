@@ -20,7 +20,6 @@ import {
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useStructure } from "@/hooks/use-structure";
-import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/users")({
   component: () => (
@@ -30,7 +29,7 @@ export const Route = createFileRoute("/users")({
   ),
 });
 
-type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; roles: string[] };
+type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; role: string };
 type ScopeRow = { user_id: string; company_id: string | null; sector: string | null; department: string | null };
 
 const scopesTable = () => (supabase as unknown as {
@@ -42,7 +41,6 @@ const scopesTable = () => (supabase as unknown as {
 }).from("user_scopes");
 
 function UsersPage() {
-  const auth = useAuth();
   const [rows, setRows] = useState<Manager[]>([]);
   const [scopes, setScopes] = useState<ScopeRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,28 +49,21 @@ function UsersPage() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
-  const [newRole, setNewRole] = useState<"manager" | "admin">("manager");
 
   const load = async () => {
     setLoading(true);
     const { data: roles } = await supabase.from("user_roles").select("user_id, role, created_at");
-    const map = new Map<string, Manager>();
-    for (const r of roles ?? []) {
-      const cur = map.get(r.user_id);
-      if (cur) cur.roles.push(r.role);
-      else map.set(r.user_id, { user_id: r.user_id, roles: [r.role], created_at: r.created_at, username: "—", display_name: null });
-    }
-    const ids = Array.from(map.keys());
+    const ids = (roles ?? []).map((r) => r.user_id);
     if (ids.length === 0) { setRows([]); setLoading(false); return; }
     const { data: profiles } = await supabase.from("profiles").select("user_id, username, display_name").in("user_id", ids);
-    for (const p of profiles ?? []) {
-      const m = map.get(p.user_id);
-      if (m) { m.username = p.username ?? "—"; m.display_name = p.display_name ?? null; }
-    }
-    const merged = Array.from(map.values()).sort((a, b) => {
-      const rank = (r: string[]) => r.includes("super_admin") ? 0 : r.includes("admin") ? 1 : 2;
-      return rank(a.roles) - rank(b.roles);
-    });
+    const merged: Manager[] = (roles ?? []).map((r) => {
+      const p = profiles?.find((x) => x.user_id === r.user_id);
+      return {
+        user_id: r.user_id, role: r.role,
+        username: p?.username ?? "—", display_name: p?.display_name ?? null,
+        created_at: r.created_at,
+      };
+    }).sort((a, b) => a.role === "admin" ? -1 : b.role === "admin" ? 1 : 0);
     setRows(merged);
     const { data: sc } = await scopesTable().select("user_id,company_id,sector,department");
     setScopes(sc ?? []);
@@ -86,7 +77,7 @@ function UsersPage() {
     if (!username.trim() || !password) return;
     setCreating(true);
     const { data, error } = await supabase.functions.invoke("admin-create-user", {
-      body: { username: username.trim(), password, display_name: displayName.trim() || username.trim(), role: newRole },
+      body: { username: username.trim(), password, display_name: displayName.trim() || username.trim() },
     });
     setCreating(false);
     if (error || (data as { error?: string })?.error) {
@@ -94,7 +85,7 @@ function UsersPage() {
       return;
     }
     toast.success("تم إنشاء المستخدم");
-    setUsername(""); setDisplayName(""); setPassword(""); setNewRole("manager");
+    setUsername(""); setDisplayName(""); setPassword("");
     load();
   };
 
@@ -124,7 +115,7 @@ function UsersPage() {
           <h2 className="font-bold text-lg mb-4 inline-flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-primary" /> مستخدم جديد
           </h2>
-          <form onSubmit={create} className="grid md:grid-cols-5 gap-3 items-end">
+          <form onSubmit={create} className="grid md:grid-cols-4 gap-3 items-end">
             <div>
               <Label>اسم المستخدم *</Label>
               <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ahmed123" required />
@@ -135,25 +126,12 @@ function UsersPage() {
             </div>
             <div>
               <Label>كلمة المرور *</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6 أحرف" required minLength={6} />
-            </div>
-            <div>
-              <Label>الدور</Label>
-              <Select value={newRole} onValueChange={(v) => setNewRole(v as "manager" | "admin")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="manager">مدير (Manager)</SelectItem>
-                  {auth.isSuperAdmin && <SelectItem value="admin">أدمن (Admin)</SelectItem>}
-                </SelectContent>
-              </Select>
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6 أحرف على الأقل" required minLength={6} />
             </div>
             <Button type="submit" disabled={creating} className="bg-primary text-primary-foreground">
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 ml-1" /> إضافة</>}
             </Button>
           </form>
-          {!auth.isSuperAdmin && (
-            <p className="text-xs text-muted-foreground mt-2">إنشاء أدمن جديد متاح للـ Super Admin فقط.</p>
-          )}
         </Card>
 
         {loading ? (
@@ -162,34 +140,23 @@ function UsersPage() {
           <div className="space-y-3">
             {rows.map((r) => {
               const userScopes = scopes.filter(s => s.user_id === r.user_id);
-              const isSuper = r.roles.includes("super_admin");
-              const isAdmin = r.roles.includes("admin");
-              const isManagerOnly = !isSuper && !isAdmin;
-              const canDelete =
-                r.user_id !== auth.user?.id && !isSuper &&
-                (isAdmin ? auth.isSuperAdmin : true);
               return (
                 <Card key={r.user_id} className="bg-gradient-card p-4 shadow-soft">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-bold inline-flex items-center gap-2">
-                        {r.username}
-                        {isSuper && <span className="text-xs bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded inline-flex items-center gap-1"><Shield className="w-3 h-3" /> Super Admin</span>}
-                        {!isSuper && isAdmin && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Admin</span>}
-                        {isManagerOnly && <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">Manager</span>}
-                      </div>
+                      <div className="font-bold">{r.username} {r.role === "admin" && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded mr-2">Admin</span>}</div>
                       {r.display_name && <div className="text-sm text-muted-foreground">{r.display_name}</div>}
-                      {isManagerOnly && (
+                      {r.role !== "admin" && (
                         <div className="text-xs text-muted-foreground mt-1">
                           {userScopes.length === 0 ? "بدون قيود — يقدر يشوف كل الهيكل" : `صلاحيات على ${userScopes.length} عنصر`}
                         </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {isManagerOnly && (
+                      {r.role !== "admin" && (
                         <ScopesDialog userId={r.user_id} username={r.username} currentScopes={userScopes} onSaved={load} />
                       )}
-                      {canDelete && (
+                      {r.role !== "admin" && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" disabled={deletingId === r.user_id}>
