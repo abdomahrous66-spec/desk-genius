@@ -241,7 +241,31 @@ function AdminStructurePage() {
           <ArrowRight className="w-4 h-4" /> الرئيسية
         </Link>
         <h1 className="text-3xl font-bold mb-2">إدارة الهيكل التنظيمي</h1>
-        <p className="text-muted-foreground mb-6">رفع شيت Excel لتحديث الهيكل تلقائياً أو إضافة/حذف وظائف يدوياً.</p>
+        <p className="text-muted-foreground mb-6">إنشاء شركات، رفع شيت Excel لتحديث الهيكل تلقائياً، أو إضافة/حذف وظائف يدوياً.</p>
+
+        <Card className="p-5 mb-6">
+          <h2 className="font-bold mb-3 flex items-center gap-2"><Plus className="w-4 h-4" /> الشركات</h2>
+          <div className="flex flex-wrap items-end gap-3 mb-4">
+            <div className="flex-1 min-w-[220px]">
+              <Label>اسم شركة جديدة</Label>
+              <Input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} placeholder="مثال: شركة X" />
+            </div>
+            <Button onClick={createCompany} disabled={creatingCompany || !newCompanyName.trim()} className="gap-2">
+              {creatingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} إضافة شركة
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {childCompanies.map(c => (
+              <div key={c.id} className="inline-flex items-center gap-1 bg-accent/40 rounded-full px-3 py-1 text-sm">
+                <span>{c.name}</span>
+                <button onClick={() => deleteCompany(c.id)} className="text-destructive hover:text-destructive/80" title="حذف الشركة">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+            {childCompanies.length === 0 && <span className="text-xs text-muted-foreground">مافيش شركات لسه.</span>}
+          </div>
+        </Card>
 
         <Card className="p-5 mb-6">
           <div className="flex flex-wrap items-end gap-3">
@@ -276,7 +300,7 @@ function AdminStructurePage() {
                 <SelectContent>{childCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><Label>Sector *</Label><Input value={newRow.sector} onChange={(e) => setNewRow({ ...newRow, sector: e.target.value })} /></div>
+            <div><Label>Sector</Label><Input value={newRow.sector} onChange={(e) => setNewRow({ ...newRow, sector: e.target.value })} /></div>
             <div><Label>Department</Label><Input value={newRow.department} onChange={(e) => setNewRow({ ...newRow, department: e.target.value })} /></div>
             <div><Label>Section</Label><Input value={newRow.section} onChange={(e) => setNewRow({ ...newRow, section: e.target.value })} /></div>
             <div><Label>Manager (Reports To)</Label><Input value={newRow.manager_position} onChange={(e) => setNewRow({ ...newRow, manager_position: e.target.value })} /></div>
