@@ -10,7 +10,7 @@ export type Scope = {
 
 /**
  * Current user's allowed scopes.
- * - admin or no rows → unrestricted (allowed = null)
+ * - owner/super_admin or no rows → unrestricted (allowed = null)
  * - else allowed = list of scope rows. NULL fields = wildcard.
  */
 export function useScopes() {
@@ -21,7 +21,7 @@ export function useScopes() {
   useEffect(() => {
     if (auth.loading) return;
     if (!auth.user) { setScopes(null); setLoading(false); return; }
-    if (auth.role === "admin") { setScopes(null); setLoading(false); return; }
+    if (auth.isSuperAdmin) { setScopes(null); setLoading(false); return; }
     (async () => {
       const { data } = await (supabase as unknown as {
         from: (t: string) => { select: (c: string) => { eq: (k: string, v: string) => Promise<{ data: Scope[] | null }> } };
