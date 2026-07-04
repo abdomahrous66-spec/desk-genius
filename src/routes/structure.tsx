@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Building2, ChevronDown, ChevronLeft, FilePlus2, FileCheck2, Layers, Loader2, Search } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { useScopes } from "@/hooks/use-scopes";
 import { useStructure, NA_KEY, type Tree } from "@/hooks/use-structure";
 
@@ -31,6 +32,7 @@ const display = (k: string) => (isReal(k) ? k : "(عام)");
 
 function StructurePage() {
   const navigate = useNavigate();
+  const auth = useAuth();
   const { isAllowed, loading: scopesLoading, scopes, isRestricted } = useScopes();
   const { companies, tree, loading: structLoading } = useStructure();
   const [query, setQuery] = useState("");
@@ -165,6 +167,7 @@ function StructurePage() {
                         isAllowed={isAllowed}
                         findApproved={findApproved}
                         goCreate={goCreate}
+                        canCreateJD={auth.canCreateJD}
                         onView={(id) => navigate({ to: "/result/$id", params: { id } })}
                         q={q}
                       />
@@ -181,7 +184,7 @@ function StructurePage() {
 }
 
 type SectorTree = Tree[string][string];
-function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApproved, goCreate, onView, q }: {
+function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApproved, goCreate, canCreateJD, onView, q }: {
   company: { id: string; name: string };
   sector: string;
   tree: SectorTree;
@@ -190,6 +193,7 @@ function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApp
   isAllowed: (cid?: string | null, sec?: string | null, dep?: string | null) => boolean;
   findApproved: (cid: string, sec: string, dep: string, s: string, ss: string, title: string) => string | undefined;
   goCreate: (cid: string, sec: string, dep: string, pos: string) => void;
+  canCreateJD: boolean;
   onView: (id: string) => void;
   q: string;
 }) {
@@ -232,9 +236,11 @@ function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApp
                                   <FileCheck2 className="w-4 h-4" /> عرض JD
                                 </Button>
                               )}
-                              <Button size="sm" variant="outline" onClick={() => goCreate(company.id, sector, d, p.position_title)} className="gap-1.5">
-                                <FilePlus2 className="w-4 h-4" /> إنشاء JD
-                              </Button>
+                              {canCreateJD && (
+                                <Button size="sm" variant="outline" onClick={() => goCreate(company.id, sector, d, p.position_title)} className="gap-1.5">
+                                  <FilePlus2 className="w-4 h-4" /> إنشاء JD
+                                </Button>
+                              )}
                             </div>
                           </li>
                         );
