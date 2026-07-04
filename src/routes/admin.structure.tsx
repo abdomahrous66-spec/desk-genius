@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useStructure, type Position } from "@/hooks/use-structure";
 
 export const Route = createFileRoute("/admin/structure")({
-  component: () => (<RequireAuth><AdminStructurePage /></RequireAuth>),
+  component: () => (<RequireAuth requireRole="super_admin"><AdminStructurePage /></RequireAuth>),
 });
 
 type Row = {
@@ -44,7 +44,7 @@ function AdminStructurePage() {
   if (auth.loading || loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
-  if (auth.role !== "admin") {
+  if (!auth.canManageStructure) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <Card className="p-8 text-center max-w-md"><h2 className="font-bold mb-2">الصفحة دي للأدمن فقط</h2><Link to="/"><Button>الرئيسية</Button></Link></Card>

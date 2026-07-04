@@ -22,7 +22,7 @@ export const Route = createFileRoute("/submit")({
     department: typeof s.department === "string" ? s.department : "",
     position: typeof s.position === "string" ? s.position : "",
   }),
-  component: () => (<RequireAuth><SubmitPage /></RequireAuth>),
+  component: () => (<RequireAuth requireRole="admin"><SubmitPage /></RequireAuth>),
 });
 
 type Lang = "ar" | "en";

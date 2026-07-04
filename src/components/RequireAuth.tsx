@@ -13,12 +13,11 @@ export function RequireAuth({
     if (auth.loading) return;
     if (!auth.user) { nav({ to: "/login" }); return; }
     if (!auth.role) { nav({ to: "/login" }); return; }
-    // "admin" requirement is satisfied by super_admin too
-    const ok = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin);
+    const ok = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin) || (requireRole === "super_admin" && auth.isSuperAdmin) || (requireRole === "owner" && auth.isOwner);
     if (!ok) { nav({ to: "/" }); }
   }, [auth, requireRole, nav]);
 
-  const roleOk = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin);
+  const roleOk = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin) || (requireRole === "super_admin" && auth.isSuperAdmin) || (requireRole === "owner" && auth.isOwner);
   if (auth.loading || !auth.user || !auth.role || !roleOk) {
     return (
       <div className="min-h-screen flex items-center justify-center">

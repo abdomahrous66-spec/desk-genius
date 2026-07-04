@@ -2,21 +2,27 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
-export type Role = "admin" | "manager" | "super_admin" | null;
+export type Role = "viewer" | "manager" | "admin" | "super_admin" | "owner" | null;
 
 export interface AuthState {
   loading: boolean;
   user: User | null;
-  role: Role;               // effective role: super_admin > admin > manager
+  role: Role;               // effective role: owner > super_admin > admin/manager > viewer
   roles: string[];          // all roles the user holds
-  isAdmin: boolean;         // admin OR super_admin
+  isAdmin: boolean;         // can create/view job descriptions
   isSuperAdmin: boolean;
+  isOwner: boolean;
+  canCreateJD: boolean;
+  canManageUsers: boolean;
+  canManageStructure: boolean;
   username: string | null;
 }
 
 const DEFAULT: AuthState = {
   loading: true, user: null, role: null, roles: [],
-  isAdmin: false, isSuperAdmin: false, username: null,
+  isAdmin: false, isSuperAdmin: false, isOwner: false,
+  canCreateJD: false, canManageUsers: false, canManageStructure: false,
+  username: null,
 };
 
 export function useAuth(): AuthState {
@@ -37,12 +43,27 @@ export function useAuth(): AuthState {
         ]);
         if (!mounted) return;
         const roles = (roleRows ?? []).map(r => r.role as string);
-        const isSuperAdmin = roles.includes("super_admin");
-        const isAdmin = isSuperAdmin || roles.includes("admin");
-        const effective: Role = isSuperAdmin ? "super_admin" : isAdmin ? "admin" : (roles[0] as Role) ?? null;
+        const isOwner = roles.includes("owner");
+        const isSuperAdmin = isOwner || roles.includes("super_admin");
+        const canCreateJD = isSuperAdmin || roles.includes("admin") || roles.includes("manager");
+        const isAdmin = canCreateJD;
+        const canManageUsers = isOwner || roles.includes("super_admin");
+        const canManageStructure = canManageUsers;
+        const effective: Role = isOwner
+          ? "owner"
+          : roles.includes("super_admin")
+            ? "super_admin"
+            : roles.includes("admin")
+              ? "admin"
+              : roles.includes("manager")
+                ? "manager"
+                : roles.includes("viewer")
+                  ? "viewer"
+                  : null;
         setState({
           loading: false, user, role: effective, roles,
-          isAdmin, isSuperAdmin, username: profile?.username ?? null,
+          isAdmin, isSuperAdmin, isOwner, canCreateJD, canManageUsers, canManageStructure,
+          username: profile?.username ?? null,
         });
       }, 0);
     };

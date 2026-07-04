@@ -25,10 +25,12 @@ function Index() {
     );
   }
 
-  const isAdmin = auth.role === "admin";
+  const canCreateJD = auth.canCreateJD;
+  const canManage = auth.canManageUsers || auth.canManageStructure;
+  const roleLabel = auth.isOwner ? "Owner" : auth.isSuperAdmin ? "Super Admin" : auth.canCreateJD ? "Admin" : "Viewer";
 
-  // Manager view: only the "Start Analysis" CTA.
-  if (!isAdmin) {
+  // Viewer view: structure only, no job analysis creation.
+  if (!canCreateJD && !canManage) {
     return (
       <div className="min-h-screen flex flex-col">
         <header className="bg-primary text-primary-foreground">
@@ -50,20 +52,12 @@ function Index() {
               <span>منصة تحليل الوظائف · نهضة مصر</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-              ابدأ تحليل وظيفي جديد
+              الهيكل التنظيمي
             </h1>
-            <p className="text-lg opacity-90">
-              املأ بيانات الوظيفة والذكاء الاصطناعي يجهزلك التوصيف الكامل بصيغة Word.
-            </p>
+            <p className="text-lg opacity-90">اعرض الهيكل التنظيمي والـ JDs المعتمدة حسب الصلاحيات المحددة لك.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
-              <Link to="/submit">
-                <Button size="lg" variant="secondary" className="text-base px-10 py-6 shadow-elevated">
-                  <Send className="w-5 h-5 ml-2" />
-                  ابدأ تحليل وظيفي
-                </Button>
-              </Link>
               <Link to="/structure">
-                <Button size="lg" variant="outline" className="text-base px-8 py-6 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                <Button size="lg" variant="secondary" className="text-base px-10 py-6 shadow-elevated">
                   <Layers className="w-5 h-5 ml-2" />
                   الهيكل التنظيمي
                 </Button>
@@ -82,7 +76,7 @@ function Index() {
         <div className="container mx-auto px-6 py-3 flex items-center justify-between text-sm">
           <div className="font-bold tracking-wide">مجموعة شركات نهضة مصر</div>
           <div className="flex items-center gap-3">
-            <span className="opacity-90">Admin · {auth.username}</span>
+            <span className="opacity-90">{roleLabel} · {auth.username}</span>
             <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/15" onClick={() => signOut()}>
               <LogOut className="w-4 h-4 ml-1" /> خروج
             </Button>
@@ -101,34 +95,42 @@ function Index() {
               تحليل الوظائف بسهولة وذكاء
             </h1>
             <p className="text-lg md:text-xl opacity-90 leading-relaxed">
-              اعمل مدراء جدد، تابع الطلبات، وحمّل توصيف الوظائف الجاهز.
+              حسب صلاحيتك تقدر تعرض الهيكل، تنشئ JD، وتدير المستخدمين والشركات.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 flex-wrap">
-              <Link to="/submit">
-                <Button size="lg" variant="secondary" className="text-base px-8 shadow-elevated">
-                  <Send className="w-5 h-5 ml-2" /> ابدأ تحليل وظيفة
-                </Button>
-              </Link>
-              <Link to="/dashboard">
-                <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <Clock className="w-5 h-5 ml-2" /> الطلبات السابقة
-                </Button>
-              </Link>
+              {canCreateJD && (
+                <Link to="/submit">
+                  <Button size="lg" variant="secondary" className="text-base px-8 shadow-elevated">
+                    <Send className="w-5 h-5 ml-2" /> ابدأ تحليل وظيفة
+                  </Button>
+                </Link>
+              )}
+              {canCreateJD && (
+                <Link to="/dashboard">
+                  <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    <Clock className="w-5 h-5 ml-2" /> الطلبات السابقة
+                  </Button>
+                </Link>
+              )}
               <Link to="/structure">
                 <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
                   <Layers className="w-5 h-5 ml-2" /> الهيكل التنظيمي
                 </Button>
               </Link>
-              <Link to="/admin/structure">
-                <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <Layers className="w-5 h-5 ml-2" /> إدارة الهيكل
-                </Button>
-              </Link>
-              <Link to="/users">
-                <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <Users className="w-5 h-5 ml-2" /> إدارة المستخدمين
-                </Button>
-              </Link>
+              {auth.canManageStructure && (
+                <Link to="/admin/structure">
+                  <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    <Layers className="w-5 h-5 ml-2" /> إدارة الهيكل
+                  </Button>
+                </Link>
+              )}
+              {auth.canManageUsers && (
+                <Link to="/users">
+                  <Button size="lg" variant="outline" className="text-base px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    <Users className="w-5 h-5 ml-2" /> إدارة المستخدمين
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -141,7 +143,7 @@ function Index() {
         </div>
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {[
-            { icon: Send, title: "1. اعمل يوزر للمدير", desc: "من إدارة المستخدمين، أضف اسم مستخدم وكلمة مرور لكل مدير" },
+            { icon: Send, title: "1. حدد الصلاحية", desc: "عرض فقط، إنشاء JD، سوبر أدمن، أو مالك" },
             { icon: Sparkles, title: "2. الذكاء الاصطناعي يحلل", desc: "حتى لو المدير ساب حقول فاضية، الـ AI بيستكمل بخبرة HR" },
             { icon: FileText, title: "3. ملف Word جاهز", desc: "حمّل Job Profile متطابق مع تمبليت نهضة مصر" },
           ].map((step, i) => (
