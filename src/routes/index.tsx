@@ -52,7 +52,7 @@ function Index() {
               <span>منصة تحليل الوظائف · نهضة مصر</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-              ابدأ تحليل وظيفي جديد
+              الهيكل التنظيمي
             </h1>
             <p className="text-lg opacity-90">اعرض الهيكل التنظيمي والـ JDs المعتمدة حسب الصلاحيات المحددة لك.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
@@ -95,7 +95,7 @@ function Index() {
               تحليل الوظائف بسهولة وذكاء
             </h1>
             <p className="text-lg md:text-xl opacity-90 leading-relaxed">
-              اعمل مدراء جدد، تابع الطلبات، وحمّل توصيف الوظائف الجاهز.
+              حسب صلاحيتك تقدر تعرض الهيكل، تنشئ JD، وتدير المستخدمين والشركات.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 flex-wrap">
               {canCreateJD && (
@@ -143,7 +143,7 @@ function Index() {
         </div>
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {[
-            { icon: Send, title: "1. اعمل يوزر للمدير", desc: "من إدارة المستخدمين، أضف اسم مستخدم وكلمة مرور لكل مدير" },
+            { icon: Send, title: "1. حدد الصلاحية", desc: "عرض فقط، إنشاء JD، سوبر أدمن، أو مالك" },
             { icon: Sparkles, title: "2. الذكاء الاصطناعي يحلل", desc: "حتى لو المدير ساب حقول فاضية، الـ AI بيستكمل بخبرة HR" },
             { icon: FileText, title: "3. ملف Word جاهز", desc: "حمّل Job Profile متطابق مع تمبليت نهضة مصر" },
           ].map((step, i) => (

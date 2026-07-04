@@ -71,7 +71,7 @@ function UsersPage() {
       if (m) { m.username = p.username ?? "—"; m.display_name = p.display_name ?? null; }
     }
     const merged = Array.from(map.values()).sort((a, b) => {
-      const rank = (r: string[]) => r.includes("super_admin") ? 0 : r.includes("admin") ? 1 : 2;
+      const rank = (r: string[]) => r.includes("owner") ? 0 : r.includes("super_admin") ? 1 : r.includes("admin") ? 2 : 3;
       return rank(a.roles) - rank(b.roles);
     });
     setRows(merged);
