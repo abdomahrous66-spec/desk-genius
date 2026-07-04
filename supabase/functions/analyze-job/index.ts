@@ -57,9 +57,10 @@ serve(async (req) => {
     if (fetchErr || !record) throw new Error("Analysis record not found");
 
     // Owner or admin only
-    const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", callerId).maybeSingle();
-    const isAdmin = roleRow?.role === "admin";
-    if (record.user_id !== callerId && !isAdmin) {
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", callerId);
+    const roles = (roleRows ?? []).map(r => r.role as string);
+    const canAnalyzeOther = roles.includes("owner") || roles.includes("super_admin") || roles.includes("admin");
+    if (record.user_id !== callerId && !canAnalyzeOther) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

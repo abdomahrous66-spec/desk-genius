@@ -1,4 +1,4 @@
-// Admin-only: deletes a user. Only super_admin can delete an admin. No one can delete super_admin.
+// Owner/super-admin only: deletes a user. Only owner can delete a super_admin. Owner cannot be deleted.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -25,19 +25,19 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, serviceKey);
     const { data: myRoles } = await admin.from("user_roles").select("role").eq("user_id", userData.user.id);
-    const iAmSuper = (myRoles ?? []).some(r => r.role === "super_admin");
-    const iAmAdmin = iAmSuper || (myRoles ?? []).some(r => r.role === "admin");
-    if (!iAmAdmin) return json({ error: "Forbidden" }, 403);
+    const iAmOwner = (myRoles ?? []).some(r => r.role === "owner");
+    const iAmSuper = iAmOwner || (myRoles ?? []).some(r => r.role === "super_admin");
+    if (!iAmSuper) return json({ error: "Forbidden" }, 403);
 
     const { target_user_id } = await req.json();
     if (!target_user_id) return json({ error: "target_user_id required" }, 400);
     if (target_user_id === userData.user.id) return json({ error: "Can't delete yourself" }, 400);
 
     const { data: targetRoles } = await admin.from("user_roles").select("role").eq("user_id", target_user_id);
+    const targetIsOwner = (targetRoles ?? []).some(r => r.role === "owner");
     const targetIsSuper = (targetRoles ?? []).some(r => r.role === "super_admin");
-    const targetIsAdmin = (targetRoles ?? []).some(r => r.role === "admin");
-    if (targetIsSuper) return json({ error: "Super Admin can't be deleted" }, 403);
-    if (targetIsAdmin && !iAmSuper) return json({ error: "Only Super Admin can delete an Admin" }, 403);
+    if (targetIsOwner) return json({ error: "Owner can't be deleted" }, 403);
+    if (targetIsSuper && !iAmOwner) return json({ error: "Only Owner can delete a Super Admin" }, 403);
 
     const { error } = await admin.auth.admin.deleteUser(target_user_id);
     if (error) throw error;

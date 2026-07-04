@@ -1,5 +1,5 @@
-// Admin-only: creates a user with username + password. Role: manager (default) or admin.
-// Only super_admin can create an admin.
+// Owner/super-admin only: creates a user with username + password.
+// Only owner can create a super_admin.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -25,20 +25,23 @@ Deno.serve(async (req) => {
     const admin = createClient(url, serviceKey);
     const { data: myRoles } = await admin.from("user_roles").select("role").eq("user_id", userData.user.id);
     const roles = (myRoles ?? []).map(r => r.role as string);
-    const iAmSuper = roles.includes("super_admin");
-    const iAmAdmin = iAmSuper || roles.includes("admin");
-    if (!iAmAdmin) return json({ error: "Forbidden: admin only" }, 403);
+    const iAmOwner = roles.includes("owner");
+    const iAmSuper = iAmOwner || roles.includes("super_admin");
+    if (!iAmSuper) return json({ error: "Forbidden: super admin only" }, 403);
 
     const body = await req.json();
     const username = String(body.username || "").trim();
     const password = String(body.password || "");
     const displayName = String(body.display_name || username).trim();
-    const requestedRole = (String(body.role || "manager").trim() as "manager" | "admin");
+    const requestedRole = String(body.role || "viewer").trim() as "viewer" | "admin" | "manager" | "super_admin" | "owner";
 
     if (!username || !password) return json({ error: "username & password required" }, 400);
     if (password.length < 6) return json({ error: "Password must be at least 6 chars" }, 400);
-    if (requestedRole === "admin" && !iAmSuper) {
-      return json({ error: "Only Super Admin can create Admin users" }, 403);
+    if (requestedRole === "owner") {
+      return json({ error: "Owner role cannot be created from here" }, 403);
+    }
+    if (requestedRole === "super_admin" && !iAmOwner) {
+      return json({ error: "Only Owner can create Super Admin users" }, 403);
     }
 
     const email = `${username.toLowerCase()}@nahdetmisr.local`;
