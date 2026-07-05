@@ -232,18 +232,19 @@ function AdminStructurePage() {
           insert: (r: unknown) => Promise<{ error: unknown }>;
         };
       };
-      const del = await sb.from("positions").delete().eq("company_id", companyId);
-      if (del.error) { toast.error("فشل حذف الموجود"); return; }
+      if (importMode === "replace") {
+        const del = await sb.from("positions").delete().eq("company_id", companyId);
+        if (del.error) { toast.error(`فشل حذف الموجود: ${errMsg(del.error)}`); return; }
+      }
 
       for (let i = 0; i < rowsForDb.length; i += 500) {
         const ins = await sb.from("positions").insert(rowsForDb.slice(i, i + 500));
         if (ins.error) {
-          const em = (ins.error as { message?: string })?.message || "Unknown DB error";
-          toast.error(`فشل الإدخال عند الصف ${i}: ${em}`);
+          toast.error(`فشل الإدخال عند الصف ${i}: ${errMsg(ins.error)}`);
           return;
         }
       }
-      toast.success(`تم استيراد ${rowsForDb.length} وظيفة من ${sheetsScanned.length - sheetsSkipped.length} شيت`);
+      toast.success(`تم ${importMode === "replace" ? "استبدال" : "إضافة"} ${rowsForDb.length} وظيفة من ${sheetsScanned.length - sheetsSkipped.length} شيت`);
       reload();
     } catch (err) {
       console.error(err);
