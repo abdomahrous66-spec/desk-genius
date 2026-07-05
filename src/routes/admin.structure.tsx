@@ -134,7 +134,7 @@ function AdminStructurePage() {
     if (!confirm("متأكد من الحذف؟")) return;
     const { error } = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
       .from("positions").delete().eq("id", id);
-    if (error) { toast.error("فشل الحذف"); return; }
+    if (error) { toast.error(`فشل الحذف: ${errMsg(error)}`); return; }
     toast.success("تم الحذف");
     reload();
   };
