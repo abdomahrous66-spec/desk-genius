@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,13 +33,7 @@ function AdminStructurePage() {
   const childCompanies = useMemo(() => companies.filter(c => c.parent_id), [companies]);
   const [companyId, setCompanyId] = useState<string>("");
   const [busy, setBusy] = useState(false);
-  const [importMode, setImportMode] = useState<"replace" | "append">("append");
   const fileRef = useRef<HTMLInputElement>(null);
-
-  // Auto-select first company when list loads
-  useEffect(() => {
-    if (!companyId && childCompanies.length > 0) setCompanyId(childCompanies[0].id);
-  }, [childCompanies, companyId]);
 
   // Add-row form
   const [newRow, setNewRow] = useState<Row>({
@@ -65,45 +59,31 @@ function AdminStructurePage() {
   const [creatingCompany, setCreatingCompany] = useState(false);
   const rootCompany = companies.find(c => !c.parent_id);
 
-  const errMsg = (e: unknown) => {
-    const x = e as { message?: string; hint?: string; code?: string; details?: string } | null;
-    if (!x) return "خطأ غير معروف";
-    return [x.message, x.details, x.hint, x.code].filter(Boolean).join(" — ") || "خطأ غير معروف";
-  };
-
   const createCompany = async () => {
     const name = newCompanyName.trim();
     if (!name) return;
     setCreatingCompany(true);
     const sb = supabase as unknown as {
-      from: (t: string) => { insert: (r: unknown) => { select: () => Promise<{ data: { id: string }[] | null; error: unknown }> } };
+      from: (t: string) => { insert: (r: unknown) => { select: () => { single: () => Promise<{ data: { id: string } | null; error: unknown }> } } };
     };
-    const { data, error } = await sb.from("companies").insert({
+    const { error } = await sb.from("companies").insert({
       name, parent_id: rootCompany?.id ?? null, sort_order: companies.length,
-    }).select();
+    }).select().single();
     setCreatingCompany(false);
-    if (error) { toast.error(`فشل إضافة الشركة: ${errMsg(error)}`); return; }
+    if (error) { toast.error("فشل إضافة الشركة"); return; }
     toast.success("تمت إضافة الشركة");
     setNewCompanyName("");
-    const newId = data?.[0]?.id;
-    if (newId) setCompanyId(newId);
     reload();
   };
 
   const deleteCompany = async (id: string) => {
     const hasPositions = positions.some(p => p.company_id === id);
-    if (hasPositions) {
-      if (!confirm("الشركة فيها وظائف — هيتم حذفها كلها. متأكد؟")) return;
-      const delPos = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
-        .from("positions").delete().eq("company_id", id);
-      if (delPos.error) { toast.error(`فشل حذف الوظائف: ${errMsg(delPos.error)}`); return; }
-    } else if (!confirm("حذف الشركة نهائياً؟")) return;
+    if (hasPositions) { toast.error("امسح الوظائف الأول"); return; }
+    if (!confirm("حذف الشركة نهائياً؟")) return;
     const { error } = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
       .from("companies").delete().eq("id", id);
-    if (error) { toast.error(`فشل الحذف: ${errMsg(error)}`); return; }
-    toast.success("تم الحذف");
-    if (companyId === id) setCompanyId("");
-    reload();
+    if (error) { toast.error("فشل الحذف"); return; }
+    toast.success("تم الحذف"); reload();
   };
 
   const addPosition = async () => {
@@ -124,7 +104,7 @@ function AdminStructurePage() {
         job_code: newRow.job_code || null,
       });
     setBusy(false);
-    if (error) { toast.error(`فشل الإضافة: ${errMsg(error)}`); return; }
+    if (error) { toast.error("فشل الإضافة"); return; }
     toast.success("تمت إضافة الوظيفة");
     setNewRow({ ...newRow, position_title: "", manager_position: "", job_code: "" });
     reload();
@@ -134,7 +114,7 @@ function AdminStructurePage() {
     if (!confirm("متأكد من الحذف؟")) return;
     const { error } = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
       .from("positions").delete().eq("id", id);
-    if (error) { toast.error(`فشل الحذف: ${errMsg(error)}`); return; }
+    if (error) { toast.error("فشل الحذف"); return; }
     toast.success("تم الحذف");
     reload();
   };
@@ -232,19 +212,18 @@ function AdminStructurePage() {
           insert: (r: unknown) => Promise<{ error: unknown }>;
         };
       };
-      if (importMode === "replace") {
-        const del = await sb.from("positions").delete().eq("company_id", companyId);
-        if (del.error) { toast.error(`فشل حذف الموجود: ${errMsg(del.error)}`); return; }
-      }
+      const del = await sb.from("positions").delete().eq("company_id", companyId);
+      if (del.error) { toast.error("فشل حذف الموجود"); return; }
 
       for (let i = 0; i < rowsForDb.length; i += 500) {
         const ins = await sb.from("positions").insert(rowsForDb.slice(i, i + 500));
         if (ins.error) {
-          toast.error(`فشل الإدخال عند الصف ${i}: ${errMsg(ins.error)}`);
+          const em = (ins.error as { message?: string })?.message || "Unknown DB error";
+          toast.error(`فشل الإدخال عند الصف ${i}: ${em}`);
           return;
         }
       }
-      toast.success(`تم ${importMode === "replace" ? "استبدال" : "إضافة"} ${rowsForDb.length} وظيفة من ${sheetsScanned.length - sheetsSkipped.length} شيت`);
+      toast.success(`تم استيراد ${rowsForDb.length} وظيفة من ${sheetsScanned.length - sheetsSkipped.length} شيت`);
       reload();
     } catch (err) {
       console.error(err);
@@ -299,20 +278,10 @@ function AdminStructurePage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5 min-w-[160px]">
-              <Label>وضع الاستيراد</Label>
-              <Select value={importMode} onValueChange={(v) => setImportMode(v as "replace" | "append")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="append">إضافة على الموجود</SelectItem>
-                  <SelectItem value="replace">استبدال الكل</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleExcel} className="hidden" />
             <Button onClick={() => fileRef.current?.click()} disabled={busy || !companyId} className="gap-2">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              رفع شيت Excel
+              رفع شيت Excel (يستبدل الموجود)
             </Button>
             <Button variant="outline" onClick={() => reload()} className="gap-2"><RefreshCw className="w-4 h-4" /> تحديث</Button>
           </div>
