@@ -124,7 +124,7 @@ function AdminStructurePage() {
         job_code: newRow.job_code || null,
       });
     setBusy(false);
-    if (error) { toast.error("فشل الإضافة"); return; }
+    if (error) { toast.error(`فشل الإضافة: ${errMsg(error)}`); return; }
     toast.success("تمت إضافة الوظيفة");
     setNewRow({ ...newRow, position_title: "", manager_position: "", job_code: "" });
     reload();
