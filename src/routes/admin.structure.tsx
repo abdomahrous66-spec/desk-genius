@@ -299,10 +299,20 @@ function AdminStructurePage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5 min-w-[160px]">
+              <Label>وضع الاستيراد</Label>
+              <Select value={importMode} onValueChange={(v) => setImportMode(v as "replace" | "append")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="append">إضافة على الموجود</SelectItem>
+                  <SelectItem value="replace">استبدال الكل</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleExcel} className="hidden" />
             <Button onClick={() => fileRef.current?.click()} disabled={busy || !companyId} className="gap-2">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              رفع شيت Excel (يستبدل الموجود)
+              رفع شيت Excel
             </Button>
             <Button variant="outline" onClick={() => reload()} className="gap-2"><RefreshCw className="w-4 h-4" /> تحديث</Button>
           </div>
