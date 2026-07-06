@@ -35,8 +35,11 @@ function AdminStructurePage() {
   const [busy, setBusy] = useState(false);
   const [importMode, setImportMode] = useState<"replace" | "append">("append");
   const fileRef = useRef<HTMLInputElement>(null);
+  const logoFileRef = useRef<HTMLInputElement>(null);
   const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyLogoUrl, setNewCompanyLogoUrl] = useState("");
   const [creatingCompany, setCreatingCompany] = useState(false);
+  const [uploadingLogoFor, setUploadingLogoFor] = useState<string | null>(null);
 
   // Auto-select first company when list loads
   useEffect(() => {
