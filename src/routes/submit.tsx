@@ -530,6 +530,15 @@ function SubmitPage() {
                   {childCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {(() => {
+                const c = childCompanies.find((x) => x.id === companyId);
+                return c?.logo_url ? (
+                  <div className="mt-3 flex items-center gap-3 p-3 rounded-lg bg-accent/20 border border-border/50">
+                    <img src={c.logo_url} alt={c.name} className="w-12 h-12 rounded-md bg-white p-1 object-contain" />
+                    <span className="font-semibold text-sm">{c.name}</span>
+                  </div>
+                ) : null;
+              })()}
             </Field>
 
             <div className="grid md:grid-cols-2 gap-4">
