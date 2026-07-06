@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, LogIn } from "lucide-react";
+import nahdetLogo from "@/assets/nahdet-misr-logo.jpg.asset.json";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
