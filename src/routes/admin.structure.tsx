@@ -81,14 +81,37 @@ function AdminStructurePage() {
     };
     const { data, error } = await sb.from("companies").insert({
       name, parent_id: rootCompany?.id ?? null, sort_order: companies.length,
+      logo_url: newCompanyLogoUrl.trim() || null,
     }).select();
     setCreatingCompany(false);
     if (error) { toast.error(`فشل إضافة الشركة: ${errMsg(error)}`); return; }
     toast.success("تمت إضافة الشركة");
     setNewCompanyName("");
+    setNewCompanyLogoUrl("");
     const newId = data?.[0]?.id;
     if (newId) setCompanyId(newId);
     reload();
+  };
+
+  const uploadCompanyLogo = async (companyId: string, file: File) => {
+    setUploadingLogoFor(companyId);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `company-logos/${companyId}-${Date.now()}.${ext}`;
+      const up = await supabase.storage.from("company-logos").upload(path, file, { upsert: true, contentType: file.type });
+      if (up.error) throw up.error;
+      const { data: pub } = supabase.storage.from("company-logos").getPublicUrl(path);
+      const url = pub.publicUrl;
+      const { error } = await (supabase as unknown as { from: (t: string) => { update: (r: unknown) => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
+        .from("companies").update({ logo_url: url }).eq("id", companyId);
+      if (error) throw error;
+      toast.success("تم تحديث الشعار");
+      reload();
+    } catch (e) {
+      toast.error(`فشل رفع الشعار: ${errMsg(e)}`);
+    } finally {
+      setUploadingLogoFor(null);
+    }
   };
 
   const deleteCompany = async (id: string) => {
