@@ -78,7 +78,10 @@ function Index() {
     <div className="min-h-screen">
       <header className="bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between text-sm">
-          <div className="font-bold tracking-wide">مجموعة شركات نهضة مصر</div>
+          <div className="flex items-center gap-3">
+            <img src={nahdetLogo.url} alt="Nahdet Misr" className="w-9 h-9 rounded-md bg-white p-0.5 object-contain" />
+            <div className="font-bold tracking-wide">مجموعة شركات نهضة مصر</div>
+          </div>
           <div className="flex items-center gap-3">
             <span className="opacity-90">{roleLabel} · {auth.username}</span>
             <Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/15" onClick={() => signOut()}>
