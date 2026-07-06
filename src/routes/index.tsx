@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FileText, Sparkles, Send, Clock, Users, LogOut, Loader2, Layers } from "lucide-react";
 import { useAuth, signOut } from "@/hooks/use-auth";
+import nahdetLogo from "@/assets/nahdet-misr-logo.jpg.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Index,
