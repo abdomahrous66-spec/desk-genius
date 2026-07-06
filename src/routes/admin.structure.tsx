@@ -283,16 +283,37 @@ function AdminStructurePage() {
               <Label>اسم شركة جديدة</Label>
               <Input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} placeholder="مثال: شركة X" />
             </div>
+            <div className="flex-1 min-w-[240px]">
+              <Label>رابط شعار الشركة (اختياري)</Label>
+              <Input value={newCompanyLogoUrl} onChange={(e) => setNewCompanyLogoUrl(e.target.value)} placeholder="https://... أو /__l5e/assets-v1/..." />
+            </div>
             <Button onClick={createCompany} disabled={creatingCompany || !newCompanyName.trim()} className="gap-2">
               {creatingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} إضافة شركة
             </Button>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="space-y-2">
             {childCompanies.map(c => (
-              <div key={c.id} className="inline-flex items-center gap-1 bg-accent/40 rounded-full px-3 py-1 text-sm">
-                <span>{c.name}</span>
-                <button onClick={() => deleteCompany(c.id)} className="text-destructive hover:text-destructive/80" title="حذف الشركة">
-                  <Trash2 className="w-3.5 h-3.5" />
+              <div key={c.id} className="flex items-center gap-3 bg-accent/20 rounded-lg p-2 border border-border/50">
+                <div className="w-10 h-10 rounded-md bg-white p-0.5 flex items-center justify-center border border-border/40 shrink-0">
+                  {c.logo_url ? (
+                    <img src={c.logo_url} alt={c.name} className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">No logo</span>
+                  )}
+                </div>
+                <span className="font-medium text-sm flex-1">{c.name}</span>
+                <Input
+                  defaultValue={c.logo_url ?? ""}
+                  placeholder="رابط الشعار"
+                  className="max-w-xs h-8 text-xs"
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v !== (c.logo_url ?? "")) updateCompanyLogo(c.id, v);
+                  }}
+                  disabled={uploadingLogoFor === c.id}
+                />
+                <button onClick={() => deleteCompany(c.id)} className="text-destructive hover:text-destructive/80 p-1" title="حذف الشركة">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             ))}
