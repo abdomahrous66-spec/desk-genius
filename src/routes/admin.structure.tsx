@@ -35,6 +35,8 @@ function AdminStructurePage() {
   const [busy, setBusy] = useState(false);
   const [importMode, setImportMode] = useState<"replace" | "append">("append");
   const fileRef = useRef<HTMLInputElement>(null);
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [creatingCompany, setCreatingCompany] = useState(false);
 
   // Auto-select first company when list loads
   useEffect(() => {
@@ -47,6 +49,9 @@ function AdminStructurePage() {
     position_title: "", manager_position: "", job_code: "",
   });
 
+  const filtered = companyId ? positions.filter(p => p.company_id === companyId) : positions;
+  const rootCompany = companies.find(c => !c.parent_id);
+
   if (auth.loading || loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -57,13 +62,6 @@ function AdminStructurePage() {
       </div>
     );
   }
-
-  const filtered = companyId ? positions.filter(p => p.company_id === companyId) : positions;
-
-  // ------- Companies management -------
-  const [newCompanyName, setNewCompanyName] = useState("");
-  const [creatingCompany, setCreatingCompany] = useState(false);
-  const rootCompany = companies.find(c => !c.parent_id);
 
   const errMsg = (e: unknown) => {
     const x = e as { message?: string; hint?: string; code?: string; details?: string } | null;
