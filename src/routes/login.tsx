@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, LogIn } from "lucide-react";
+import nahdetLogo from "@/assets/nahdet-misr-logo.jpg.asset.json";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -47,7 +48,10 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-hero px-4" dir="rtl">
       <Card className="w-full max-w-md p-8 shadow-elevated">
-        <div className="text-center mb-6">
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="w-24 h-24 rounded-2xl bg-white p-2 shadow-soft flex items-center justify-center mb-4">
+            <img src={nahdetLogo.url} alt="Nahdet Misr Group" className="w-full h-full object-contain" />
+          </div>
           <h1 className="text-2xl font-bold mb-1">مجموعة شركات نهضة مصر</h1>
           <p className="text-sm text-muted-foreground">منصة تحليل الوظائف — تسجيل الدخول</p>
         </div>

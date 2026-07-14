@@ -1,0 +1,2 @@
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS logo_url TEXT;
+UPDATE public.companies SET logo_url = '/__l5e/assets-v1/2d7f129e-9c7e-40d7-8d28-db60c0e63f3c/nahdet-misr-logo.jpg' WHERE id IN ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002');

@@ -38,28 +38,28 @@
 :root {
   --radius: 0.75rem;
 
-  /* Nahdet Misr brand: deep red + warm gold accents */
-  --background: oklch(0.985 0.005 30);
-  --foreground: oklch(0.18 0.04 25);
+  /* Nahdet Misr brand: deep navy blue (matches logo) */
+  --background: oklch(0.985 0.005 250);
+  --foreground: oklch(0.18 0.05 265);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.04 25);
+  --card-foreground: oklch(0.18 0.05 265);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.04 25);
+  --popover-foreground: oklch(0.18 0.05 265);
 
-  --primary: oklch(0.50 0.18 27);
-  --primary-foreground: oklch(0.99 0.005 30);
-  --primary-glow: oklch(0.62 0.20 25);
+  --primary: oklch(0.36 0.14 265);
+  --primary-foreground: oklch(0.99 0.005 250);
+  --primary-glow: oklch(0.52 0.18 265);
 
-  --secondary: oklch(0.96 0.015 30);
-  --secondary-foreground: oklch(0.25 0.05 25);
+  --secondary: oklch(0.96 0.02 255);
+  --secondary-foreground: oklch(0.25 0.08 265);
 
-  --muted: oklch(0.96 0.01 30);
-  --muted-foreground: oklch(0.5 0.025 25);
+  --muted: oklch(0.96 0.012 255);
+  --muted-foreground: oklch(0.5 0.03 260);
 
-  --accent: oklch(0.78 0.13 75);
-  --accent-foreground: oklch(0.2 0.04 60);
+  --accent: oklch(0.78 0.12 235);
+  --accent-foreground: oklch(0.2 0.06 265);
 
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
@@ -67,42 +67,42 @@
   --success: oklch(0.62 0.14 155);
   --success-foreground: oklch(0.99 0 0);
 
-  --border: oklch(0.9 0.012 30);
-  --input: oklch(0.92 0.012 30);
-  --ring: oklch(0.55 0.18 27);
+  --border: oklch(0.9 0.015 255);
+  --input: oklch(0.92 0.015 255);
+  --ring: oklch(0.45 0.16 265);
 
-  --gradient-hero: linear-gradient(135deg, oklch(0.42 0.18 27) 0%, oklch(0.55 0.20 25) 50%, oklch(0.65 0.18 35) 100%);
-  --gradient-subtle: linear-gradient(180deg, oklch(0.99 0.005 30) 0%, oklch(0.96 0.015 30) 100%);
-  --gradient-card: linear-gradient(145deg, oklch(1 0 0) 0%, oklch(0.98 0.01 30) 100%);
+  --gradient-hero: linear-gradient(135deg, oklch(0.28 0.13 265) 0%, oklch(0.40 0.16 262) 55%, oklch(0.55 0.18 258) 100%);
+  --gradient-subtle: linear-gradient(180deg, oklch(0.99 0.005 250) 0%, oklch(0.96 0.02 255) 100%);
+  --gradient-card: linear-gradient(145deg, oklch(1 0 0) 0%, oklch(0.98 0.012 255) 100%);
 
-  --shadow-soft: 0 2px 8px -2px oklch(0.50 0.18 27 / 0.10);
-  --shadow-elevated: 0 10px 40px -10px oklch(0.50 0.18 27 / 0.28);
-  --shadow-glow: 0 0 60px oklch(0.62 0.20 25 / 0.3);
+  --shadow-soft: 0 2px 8px -2px oklch(0.36 0.14 265 / 0.12);
+  --shadow-elevated: 0 10px 40px -10px oklch(0.36 0.14 265 / 0.30);
+  --shadow-glow: 0 0 60px oklch(0.52 0.18 265 / 0.35);
 }
 
 .dark {
-  --background: oklch(0.16 0.025 25);
-  --foreground: oklch(0.97 0.005 30);
-  --card: oklch(0.22 0.03 25);
-  --card-foreground: oklch(0.97 0.005 30);
-  --popover: oklch(0.22 0.03 25);
-  --popover-foreground: oklch(0.97 0.005 30);
-  --primary: oklch(0.65 0.20 27);
-  --primary-foreground: oklch(0.16 0.025 25);
-  --primary-glow: oklch(0.72 0.20 25);
-  --secondary: oklch(0.28 0.03 25);
-  --secondary-foreground: oklch(0.97 0.005 30);
-  --muted: oklch(0.26 0.025 25);
-  --muted-foreground: oklch(0.7 0.02 25);
-  --accent: oklch(0.78 0.13 75);
-  --accent-foreground: oklch(0.18 0.04 60);
+  --background: oklch(0.16 0.03 265);
+  --foreground: oklch(0.97 0.005 250);
+  --card: oklch(0.22 0.04 265);
+  --card-foreground: oklch(0.97 0.005 250);
+  --popover: oklch(0.22 0.04 265);
+  --popover-foreground: oklch(0.97 0.005 250);
+  --primary: oklch(0.62 0.18 265);
+  --primary-foreground: oklch(0.16 0.03 265);
+  --primary-glow: oklch(0.72 0.18 262);
+  --secondary: oklch(0.28 0.04 265);
+  --secondary-foreground: oklch(0.97 0.005 250);
+  --muted: oklch(0.26 0.03 265);
+  --muted-foreground: oklch(0.72 0.02 260);
+  --accent: oklch(0.78 0.12 235);
+  --accent-foreground: oklch(0.18 0.06 265);
   --destructive: oklch(0.65 0.2 25);
   --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.65 0.14 155);
   --success-foreground: oklch(0.99 0 0);
-  --border: oklch(0.3 0.025 25);
-  --input: oklch(0.3 0.025 25);
-  --ring: oklch(0.6 0.18 27);
+  --border: oklch(0.3 0.03 265);
+  --input: oklch(0.3 0.03 265);
+  --ring: oklch(0.58 0.16 265);
 }
 
 @layer base {

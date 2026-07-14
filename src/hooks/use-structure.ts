@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Company = { id: string; name: string; parent_id: string | null; sort_order: number };
+export type Company = { id: string; name: string; parent_id: string | null; sort_order: number; logo_url?: string | null };
 export type Position = {
   id: string;
   company_id: string;
