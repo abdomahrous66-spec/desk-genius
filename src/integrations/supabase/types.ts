@@ -185,6 +185,173 @@ export type Database = {
         }
         Relationships: []
       }
+      training_needs: {
+        Row: {
+          after_assessment_score: number | null
+          attendance_status: string | null
+          company_id: string | null
+          content_evaluation_score: number | null
+          created_at: string
+          created_by: string | null
+          delivery_type: string | null
+          department: string | null
+          employee_code: string | null
+          employee_level: string | null
+          employee_name: string | null
+          employee_status: string | null
+          employee_title: string | null
+          expected_kpi: string | null
+          gender: string | null
+          general_evaluation_score: number | null
+          hiring_date: string | null
+          id: string
+          implementation_month: string | null
+          implementation_quarter: string | null
+          implementation_year: number | null
+          internal_years_experience: number | null
+          knowledge_enhancement_roi: number | null
+          location: string | null
+          notes: string | null
+          position_title: string | null
+          pre_assessment_score: number | null
+          provider_recommendation: string | null
+          reason_of_no_show: string | null
+          recommended_quarter_1: string | null
+          recommended_quarter_2: string | null
+          section: string | null
+          sector: string | null
+          source: string | null
+          status: string
+          total_training_cost: number | null
+          trainer_evaluation_score: number | null
+          training_days: number | null
+          training_effectiveness_status: string | null
+          training_end_date: string | null
+          training_hours: number | null
+          training_identification: string | null
+          training_objective: string | null
+          training_priority: string | null
+          training_provider: string | null
+          training_start_date: string | null
+          training_status: string | null
+          training_topic: string
+          training_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          after_assessment_score?: number | null
+          attendance_status?: string | null
+          company_id?: string | null
+          content_evaluation_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          delivery_type?: string | null
+          department?: string | null
+          employee_code?: string | null
+          employee_level?: string | null
+          employee_name?: string | null
+          employee_status?: string | null
+          employee_title?: string | null
+          expected_kpi?: string | null
+          gender?: string | null
+          general_evaluation_score?: number | null
+          hiring_date?: string | null
+          id?: string
+          implementation_month?: string | null
+          implementation_quarter?: string | null
+          implementation_year?: number | null
+          internal_years_experience?: number | null
+          knowledge_enhancement_roi?: number | null
+          location?: string | null
+          notes?: string | null
+          position_title?: string | null
+          pre_assessment_score?: number | null
+          provider_recommendation?: string | null
+          reason_of_no_show?: string | null
+          recommended_quarter_1?: string | null
+          recommended_quarter_2?: string | null
+          section?: string | null
+          sector?: string | null
+          source?: string | null
+          status?: string
+          total_training_cost?: number | null
+          trainer_evaluation_score?: number | null
+          training_days?: number | null
+          training_effectiveness_status?: string | null
+          training_end_date?: string | null
+          training_hours?: number | null
+          training_identification?: string | null
+          training_objective?: string | null
+          training_priority?: string | null
+          training_provider?: string | null
+          training_start_date?: string | null
+          training_status?: string | null
+          training_topic: string
+          training_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          after_assessment_score?: number | null
+          attendance_status?: string | null
+          company_id?: string | null
+          content_evaluation_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          delivery_type?: string | null
+          department?: string | null
+          employee_code?: string | null
+          employee_level?: string | null
+          employee_name?: string | null
+          employee_status?: string | null
+          employee_title?: string | null
+          expected_kpi?: string | null
+          gender?: string | null
+          general_evaluation_score?: number | null
+          hiring_date?: string | null
+          id?: string
+          implementation_month?: string | null
+          implementation_quarter?: string | null
+          implementation_year?: number | null
+          internal_years_experience?: number | null
+          knowledge_enhancement_roi?: number | null
+          location?: string | null
+          notes?: string | null
+          position_title?: string | null
+          pre_assessment_score?: number | null
+          provider_recommendation?: string | null
+          reason_of_no_show?: string | null
+          recommended_quarter_1?: string | null
+          recommended_quarter_2?: string | null
+          section?: string | null
+          sector?: string | null
+          source?: string | null
+          status?: string
+          total_training_cost?: number | null
+          trainer_evaluation_score?: number | null
+          training_days?: number | null
+          training_effectiveness_status?: string | null
+          training_end_date?: string | null
+          training_hours?: number | null
+          training_identification?: string | null
+          training_objective?: string | null
+          training_priority?: string | null
+          training_provider?: string | null
+          training_start_date?: string | null
+          training_status?: string | null
+          training_topic?: string
+          training_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_needs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
