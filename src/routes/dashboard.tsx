@@ -63,7 +63,7 @@ function Dashboard() {
             <ArrowRight className="w-4 h-4" />
             الرئيسية
           </Link>
-          <Link to="/submit">
+          <Link to="/submit" search={{ company_id: "", sector: "", department: "", position: "" }}>
             <Button size="sm" className="bg-primary text-primary-foreground">
               <Plus className="w-4 h-4 ml-1.5" />
               تحليل جديد
@@ -85,7 +85,7 @@ function Dashboard() {
             <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-xl font-bold mb-2">مفيش طلبات لسة</h2>
             <p className="text-muted-foreground mb-6">ابدأ أول تحليل وظيفة دلوقتي</p>
-            <Link to="/submit">
+            <Link to="/submit" search={{ company_id: "", sector: "", department: "", position: "" }}>
               <Button className="bg-gradient-hero text-primary-foreground">ابدأ تحليل</Button>
             </Link>
           </Card>
