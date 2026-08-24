@@ -106,7 +106,7 @@ function Index() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 flex-wrap">
               {canCreateJD && (
-                <Link to="/submit">
+                <Link to="/submit" search={{ company_id: "", sector: "", department: "", position: "" }}>
                   <Button size="lg" variant="secondary" className="text-base px-8 shadow-elevated">
                     <Send className="w-5 h-5 ml-2" /> ابدأ تحليل وظيفة
                   </Button>
