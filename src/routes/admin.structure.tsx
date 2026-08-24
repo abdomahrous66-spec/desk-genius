@@ -150,6 +150,56 @@ function AdminStructurePage() {
     toast.success("تم الحذف");
     reload();
   };
+  const downloadTemplate = async () => {
+    const XLSX = await import("xlsx");
+    const headers = ["Sector", "Department", "Section", "Position", "Manager", "Job Code"];
+    const sample = [
+      ["القطاع التجاري", "إدارة المبيعات", "قسم مبيعات القاهرة", "مدير مبيعات", "مدير عام المبيعات", "S-001"],
+      ["القطاع التجاري", "إدارة المبيعات", "قسم مبيعات القاهرة", "أخصائي مبيعات", "مدير مبيعات", "S-002"],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
+    ws["!cols"] = headers.map(() => ({ wch: 24 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Structure");
+    XLSX.writeFile(wb, "Structure-Template.xlsx");
+    toast.success("تم تنزيل التمبلت");
+  };
+
+  const downloadReport = async () => {
+    const XLSX = await import("xlsx");
+    const wb = XLSX.utils.book_new();
+    const nameOf = (id: string) => companies.find(c => c.id === id)?.name ?? "-";
+
+    const all = (companyId ? positions.filter(p => p.company_id === companyId) : positions).map(p => ({
+      Company: nameOf(p.company_id),
+      Sector: p.sector || "-",
+      Department: p.department || "-",
+      Section: p.section || "-",
+      Position: p.position_title,
+      Manager: p.manager_position || "-",
+      "Job Code": p.job_code || "-",
+    }));
+    const ws = XLSX.utils.json_to_sheet(all);
+    ws["!cols"] = [30, 24, 24, 24, 30, 28, 14].map(wch => ({ wch }));
+    XLSX.utils.book_append_sheet(wb, ws, "Positions");
+
+    const counts = new Map<string, number>();
+    for (const p of positions) {
+      const key = [nameOf(p.company_id), p.sector || "-", p.department || "-", p.section || "-"].join("||");
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const summary = [...counts.entries()].map(([k, n]) => {
+      const [Company, Sector, Department, Section] = k.split("||");
+      return { Company, Sector, Department, Section, "عدد الوظائف": n };
+    });
+    const ws2 = XLSX.utils.json_to_sheet(summary);
+    ws2["!cols"] = [30, 24, 24, 24, 14].map(wch => ({ wch }));
+    XLSX.utils.book_append_sheet(wb, ws2, "Structure Summary");
+
+    XLSX.writeFile(wb, `Structure-Report-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("تم تنزيل التقرير");
+  };
+
 
   const handleExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
