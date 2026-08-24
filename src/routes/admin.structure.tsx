@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Loader2, Plus, Trash2, Upload, RefreshCw } from "lucide-react";
+import { ArrowRight, Loader2, Plus, Trash2, Upload, RefreshCw, Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/hooks/use-auth";
