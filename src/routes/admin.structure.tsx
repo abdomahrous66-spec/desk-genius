@@ -397,6 +397,8 @@ function AdminStructurePage() {
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               رفع شيت Excel
             </Button>
+            <Button variant="outline" onClick={downloadTemplate} className="gap-2"><Download className="w-4 h-4" /> تنزيل التمبلت</Button>
+            <Button variant="outline" onClick={downloadReport} className="gap-2"><FileSpreadsheet className="w-4 h-4" /> تنزيل تقرير الهيكل</Button>
             <Button variant="outline" onClick={() => reload()} className="gap-2"><RefreshCw className="w-4 h-4" /> تحديث</Button>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
