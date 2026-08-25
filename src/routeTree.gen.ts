@@ -17,6 +17,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TrainingPlanRouteImport } from './routes/training.plan'
 import { Route as TrainingNeedsRouteImport } from './routes/training.needs'
+import { Route as TrainingDashboardRouteImport } from './routes/training.dashboard'
 import { Route as ResultIdRouteImport } from './routes/result.$id'
 import { Route as AdminStructureRouteImport } from './routes/admin.structure'
 
@@ -60,6 +61,11 @@ const TrainingNeedsRoute = TrainingNeedsRouteImport.update({
   path: '/training/needs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainingDashboardRoute = TrainingDashboardRouteImport.update({
+  id: '/training/dashboard',
+  path: '/training/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultIdRoute = ResultIdRouteImport.update({
   id: '/result/$id',
   path: '/result/$id',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/admin/structure': typeof AdminStructureRoute
   '/result/$id': typeof ResultIdRoute
+  '/training/dashboard': typeof TrainingDashboardRoute
   '/training/needs': typeof TrainingNeedsRoute
   '/training/plan': typeof TrainingPlanRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/admin/structure': typeof AdminStructureRoute
   '/result/$id': typeof ResultIdRoute
+  '/training/dashboard': typeof TrainingDashboardRoute
   '/training/needs': typeof TrainingNeedsRoute
   '/training/plan': typeof TrainingPlanRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/admin/structure': typeof AdminStructureRoute
   '/result/$id': typeof ResultIdRoute
+  '/training/dashboard': typeof TrainingDashboardRoute
   '/training/needs': typeof TrainingNeedsRoute
   '/training/plan': typeof TrainingPlanRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/admin/structure'
     | '/result/$id'
+    | '/training/dashboard'
     | '/training/needs'
     | '/training/plan'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/admin/structure'
     | '/result/$id'
+    | '/training/dashboard'
     | '/training/needs'
     | '/training/plan'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/admin/structure'
     | '/result/$id'
+    | '/training/dashboard'
     | '/training/needs'
     | '/training/plan'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   AdminStructureRoute: typeof AdminStructureRoute
   ResultIdRoute: typeof ResultIdRoute
+  TrainingDashboardRoute: typeof TrainingDashboardRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
   TrainingPlanRoute: typeof TrainingPlanRoute
 }
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrainingNeedsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/training/dashboard': {
+      id: '/training/dashboard'
+      path: '/training/dashboard'
+      fullPath: '/training/dashboard'
+      preLoaderRoute: typeof TrainingDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/result/$id': {
       id: '/result/$id'
       path: '/result/$id'
@@ -244,6 +264,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   AdminStructureRoute: AdminStructureRoute,
   ResultIdRoute: ResultIdRoute,
+  TrainingDashboardRoute: TrainingDashboardRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
   TrainingPlanRoute: TrainingPlanRoute,
 }
