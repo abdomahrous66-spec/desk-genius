@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
-export type Role = "viewer" | "manager" | "admin" | "super_admin" | "owner" | null;
+export type Role = "viewer" | "manager" | "admin" | "training" | "super_admin" | "owner" | null;
 
 export interface AuthState {
   loading: boolean;
@@ -15,13 +15,14 @@ export interface AuthState {
   canCreateJD: boolean;
   canManageUsers: boolean;
   canManageStructure: boolean;
+  canTraining: boolean;   // can open & register training needs (TN)
   username: string | null;
 }
 
 const DEFAULT: AuthState = {
   loading: true, user: null, role: null, roles: [],
   isAdmin: false, isSuperAdmin: false, isOwner: false,
-  canCreateJD: false, canManageUsers: false, canManageStructure: false,
+  canCreateJD: false, canManageUsers: false, canManageStructure: false, canTraining: false,
   username: null,
 };
 
@@ -49,6 +50,7 @@ export function useAuth(): AuthState {
         const isAdmin = canCreateJD;
         const canManageUsers = isOwner || roles.includes("super_admin");
         const canManageStructure = canManageUsers;
+        const canTraining = isSuperAdmin || roles.includes("training");
         const effective: Role = isOwner
           ? "owner"
           : roles.includes("super_admin")
@@ -62,7 +64,7 @@ export function useAuth(): AuthState {
                   : null;
         setState({
           loading: false, user, role: effective, roles,
-          isAdmin, isSuperAdmin, isOwner, canCreateJD, canManageUsers, canManageStructure,
+          isAdmin, isSuperAdmin, isOwner, canCreateJD, canManageUsers, canManageStructure, canTraining,
           username: profile?.username ?? null,
         });
       }, 0);

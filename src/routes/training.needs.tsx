@@ -28,7 +28,7 @@ export const Route = createFileRoute("/training/needs")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => (<RequireAuth><NeedsPage /></RequireAuth>),
+  component: () => (<RequireAuth requireRole="training"><NeedsPage /></RequireAuth>),
 });
 
 type Draft = Partial<TrainingNeed> & { training_topic?: string };

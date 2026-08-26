@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, Check, Download, Loader2, Pencil, X } from "lucide-react";
-import { TP_COLUMNS, TP_EDIT_FIELDS, NUMBER_KEYS, STATUS_LABELS, type TrainingNeed } from "@/lib/training";
+import { ArrowRight, Check, Download, Loader2, Pencil, Plus, Upload, X } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { TP_COLUMNS, TP_EDIT_FIELDS, NUMBER_KEYS, STATUS_LABELS, mapPlanSheetRow, type TrainingNeed } from "@/lib/training";
 
 export const Route = createFileRoute("/training/plan")({
   head: () => ({
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/training/plan")({
 });
 
 function PlanPage() {
+  const auth = useAuth();
   const { companies } = useStructure();
   const [rows, setRows] = useState<TrainingNeed[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,9 @@ function PlanPage() {
   const [editing, setEditing] = useState<TrainingNeed | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadCompany, setUploadCompany] = useState("");
 
   const companyName = useMemo(() => Object.fromEntries(companies.map(c => [c.id, c.name])), [companies]);
 
@@ -70,19 +75,74 @@ function PlanPage() {
     setDraft(Object.fromEntries(TP_EDIT_FIELDS.map(f => [f.key as string, (r[f.key] ?? "") as string])));
   };
 
+  const openCreate = () => {
+    setCreating(true);
+    setDraft(Object.fromEntries([...TP_EDIT_FIELDS.map(f => [f.key as string, ""]), ["training_topic", ""], ["sector", ""], ["department", ""], ["position_title", ""], ["employee_code", ""], ["employee_name", ""]]));
+  };
+
   const saveEdit = async () => {
-    if (!editing) return;
-    setSaving(true);
+    if (!editing && !creating) return;
     const payload: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(draft)) {
       payload[k] = v === "" ? null : NUMBER_KEYS.has(k) ? Number(v) : v;
     }
-    const { error } = await supabase.from("training_needs").update(payload as never).eq("id", editing.id);
+    if (creating) {
+      if (!draft.training_topic?.trim()) { toast.error("الموضوع التدريبي مطلوب"); return; }
+      setSaving(true);
+      const { error: cErr } = await supabase.from("training_needs").insert({
+        ...payload, training_topic: draft.training_topic.trim(),
+        created_by: auth.user!.id, company_id: uploadCompany || null, status: "approved",
+      } as never);
+      setSaving(false);
+      if (cErr) { toast.error(cErr.message); return; }
+      toast.success("تمت إضافة السجل لخطة التدريب");
+      setCreating(false);
+      load();
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from("training_needs").update(payload as never).eq("id", editing!.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("تم حفظ بيانات خطة التدريب");
     setEditing(null);
     load();
+  };
+
+  const downloadPlanTemplate = () => {
+    const ws = XLSX.utils.aoa_to_sheet([TP_COLUMNS.map(c => c.header)]);
+    ws["!cols"] = TP_COLUMNS.map(() => ({ wch: 22 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Training Plan");
+    XLSX.writeFile(wb, "Training-Plan-Template.xlsx");
+  };
+
+  const onUploadPlan = async (file: File) => {
+    setUploading(true);
+    try {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+      const byName = new Map(companies.map(c => [c.name.trim().toLowerCase(), c.id]));
+      const mapped = json
+        .map(r => {
+          const row = mapPlanSheetRow(r) as Record<string, unknown>;
+          const cName = Object.entries(r).find(([k]) => /company|الشركة/i.test(k))?.[1];
+          const cid = uploadCompany || (cName ? byName.get(String(cName).trim().toLowerCase()) : undefined);
+          return { ...row, company_id: cid ?? null, created_by: auth.user!.id, status: "approved" };
+        })
+        .filter(r => r.training_topic && String(r.training_topic).trim());
+      if (!mapped.length) { toast.error("مفيش صفوف صالحة — تأكد من عمود Training Topics"); return; }
+      const { error } = await supabase.from("training_needs").insert(mapped as never);
+      if (error) { toast.error("فشل الرفع: " + error.message); return; }
+      toast.success(`تم رفع ${mapped.length} سجل لخطة التدريب`);
+      setTab("plan");
+      load();
+    } catch {
+      toast.error("ملف غير صالح");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const exportReport = () => {
@@ -119,6 +179,20 @@ function PlanPage() {
           <div className="flex gap-2">
             {tab === "new" && <Button variant="secondary" onClick={approveAll} disabled={!pending.length}><Check className="w-4 h-4 ml-1" /> اعتماد الكل</Button>}
             <Button variant="outline" onClick={exportReport}><Download className="w-4 h-4 ml-1" /> تصدير تقرير Excel</Button>
+            <Button variant="outline" onClick={downloadPlanTemplate}><Download className="w-4 h-4 ml-1" /> تمبلت الخطة</Button>
+            <label>
+              <input type="file" accept=".xlsx,.xls" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) onUploadPlan(f); e.currentTarget.value = ""; }} />
+              <Button variant="outline" asChild disabled={uploading}>
+                <span>{uploading ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Upload className="w-4 h-4 ml-1" />} رفع شيت التدريب</span>
+              </Button>
+            </label>
+            <Button onClick={openCreate}><Plus className="w-4 h-4 ml-1" /> إضافة سجل</Button>
+            <select className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={uploadCompany} onChange={e => setUploadCompany(e.target.value)}>
+              <option value="">الشركة (اختياري)</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
         </div>
 
@@ -165,10 +239,19 @@ function PlanPage() {
         </Card>
       </div>
 
-      <Dialog open={!!editing} onOpenChange={o => !o && setEditing(null)}>
+      <Dialog open={!!editing || creating} onOpenChange={o => { if (!o) { setEditing(null); setCreating(false); } }}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-auto" dir="rtl">
-          <DialogHeader><DialogTitle>بيانات خطة التدريب — {editing?.training_topic}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{creating ? "إضافة سجل تدريب" : `بيانات خطة التدريب — ${editing?.training_topic}`}</DialogTitle></DialogHeader>
           <div className="grid md:grid-cols-3 gap-4">
+            {creating && ([
+              ["training_topic", "Training Topic *"], ["sector", "Sector"], ["department", "Department"],
+              ["position_title", "Position"], ["employee_code", "Employee Code"], ["employee_name", "Employee Name"],
+            ] as const).map(([k, label]) => (
+              <div key={k} className="space-y-1.5">
+                <Label className="text-xs">{label}</Label>
+                <Input value={draft[k] ?? ""} onChange={e => setDraft(p => ({ ...p, [k]: e.target.value }))} />
+              </div>
+            ))}
             {TP_EDIT_FIELDS.map(f => (
               <div key={f.key as string} className="space-y-1.5">
                 <Label className="text-xs">{f.label}</Label>
@@ -178,7 +261,7 @@ function PlanPage() {
             ))}
           </div>
           <div className="flex gap-2 justify-end pt-2">
-            <Button variant="outline" onClick={() => setEditing(null)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => { setEditing(null); setCreating(false); }}>إلغاء</Button>
             <Button onClick={saveEdit} disabled={saving}>{saving && <Loader2 className="w-4 h-4 ml-1 animate-spin" />} حفظ</Button>
           </div>
         </DialogContent>

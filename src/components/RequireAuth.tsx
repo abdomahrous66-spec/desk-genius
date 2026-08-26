@@ -13,11 +13,11 @@ export function RequireAuth({
     if (auth.loading) return;
     if (!auth.user) { nav({ to: "/login" }); return; }
     if (!auth.role) { nav({ to: "/login" }); return; }
-    const ok = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin) || (requireRole === "super_admin" && auth.isSuperAdmin) || (requireRole === "owner" && auth.isOwner);
+    const ok = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin) || (requireRole === "super_admin" && auth.isSuperAdmin) || (requireRole === "owner" && auth.isOwner) || (requireRole === "training" && auth.canTraining);
     if (!ok) { nav({ to: "/" }); }
   }, [auth, requireRole, nav]);
 
-  const roleOk = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin) || (requireRole === "super_admin" && auth.isSuperAdmin) || (requireRole === "owner" && auth.isOwner);
+  const roleOk = !requireRole || auth.role === requireRole || (requireRole === "admin" && auth.isAdmin) || (requireRole === "super_admin" && auth.isSuperAdmin) || (requireRole === "owner" && auth.isOwner) || (requireRole === "training" && auth.canTraining);
   if (auth.loading || !auth.user || !auth.role || !roleOk) {
     return (
       <div className="min-h-screen flex items-center justify-center">
