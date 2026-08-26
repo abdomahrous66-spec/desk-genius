@@ -77,7 +77,7 @@ function PlanPage() {
     for (const [k, v] of Object.entries(draft)) {
       payload[k] = v === "" ? null : NUMBER_KEYS.has(k) ? Number(v) : v;
     }
-    const { error } = await supabase.from("training_needs").update(payload).eq("id", editing.id);
+    const { error } = await supabase.from("training_needs").update(payload as never).eq("id", editing.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("تم حفظ بيانات خطة التدريب");
