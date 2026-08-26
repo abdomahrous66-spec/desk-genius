@@ -177,3 +177,37 @@ export function mapSheetRow(row: Record<string, unknown>): Partial<TrainingNeed>
   }
   return out as Partial<TrainingNeed>;
 }
+
+/** Map an uploaded full training-plan (TP) sheet row onto TrainingNeed fields. */
+export function mapPlanSheetRow(row: Record<string, unknown>): Partial<TrainingNeed> {
+  const out: Record<string, unknown> = {};
+  const entries = Object.entries(row).map(([k, v]) => [normalizeHeader(k), v] as const);
+  const cols = [...TP_COLUMNS, ...TN_COLUMNS].filter(c => c.key !== "company_id");
+  for (const col of cols) {
+    if (out[col.key as string] !== undefined) continue;
+    const targets = col.header.split("/").map(s => normalizeHeader(s)).filter(Boolean);
+    const hit = entries.find(([k]) => targets.some(t => k === t || k.includes(t) || t.includes(k)));
+    if (!hit) continue;
+    const raw = hit[1];
+    if (raw === undefined || raw === null || String(raw).trim() === "") continue;
+    const key = col.key as string;
+    if (NUMBER_KEYS.has(key) || key === "implementation_year") {
+      const n = Number(String(raw).replace(/[^0-9.\-]/g, ""));
+      if (!Number.isNaN(n)) out[key] = n;
+    } else if (key.endsWith("_date")) {
+      out[key] = excelDate(raw);
+    } else {
+      out[key] = String(raw).trim();
+    }
+  }
+  return out as Partial<TrainingNeed>;
+}
+
+function excelDate(v: unknown): string | null {
+  if (typeof v === "number") {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  }
+  const d = new Date(String(v));
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
