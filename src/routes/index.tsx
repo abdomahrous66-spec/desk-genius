@@ -97,7 +97,8 @@ function Index() {
     structureTiles.push({ to: "/users", icon: Users, title: "إدارة المستخدمين", desc: "إنشاء المستخدمين وتحديد الصلاحيات والنطاقات." });
   }
 
-  const trainingTiles: Tile[] = [
+  const trainingTiles: Tile[] = [];
+  if (auth.canTraining) trainingTiles.push(
     { to: "/training/needs", icon: ClipboardList, title: "الاحتياجات التدريبية (TN)", desc: "المديرون يسجلون احتياجات فرقهم يدوياً أو برفع شيت Excel." },
   ];
   if (isOD) {

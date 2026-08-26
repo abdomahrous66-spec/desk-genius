@@ -32,7 +32,7 @@ export const Route = createFileRoute("/users")({
 
 type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; roles: string[] };
 type ScopeRow = { user_id: string; company_id: string | null; sector: string | null; department: string | null };
-type AssignableRole = "viewer" | "admin" | "super_admin";
+type AssignableRole = "viewer" | "admin" | "training" | "super_admin";
 
 const scopesTable = () => (supabase as unknown as {
   from: (t: string) => {
@@ -145,6 +145,7 @@ function UsersPage() {
                 <SelectContent>
                   <SelectItem value="viewer">عرض فقط</SelectItem>
                   <SelectItem value="admin">إنشاء وعرض JD</SelectItem>
+                  <SelectItem value="training">تسجيل الاحتياجات التدريبية (TN)</SelectItem>
                   {auth.isOwner && <SelectItem value="super_admin">Super Admin</SelectItem>}
                 </SelectContent>
               </Select>
