@@ -53,6 +53,7 @@ export function useAuth(): AuthState {
         const canManageUsers = isOwner || roles.includes("super_admin");
         const canManageStructure = canManageUsers;
         const canTraining = isSuperAdmin || roles.includes("training");
+        const canDelete = isOwner || roles.includes("deleter");
         const effective: Role = isOwner
           ? "owner"
           : roles.includes("super_admin")
@@ -67,6 +68,7 @@ export function useAuth(): AuthState {
         setState({
           loading: false, user, role: effective, roles,
           isAdmin, isSuperAdmin, isOwner, canCreateJD, canManageUsers, canManageStructure, canTraining,
+          canDelete,
           username: profile?.username ?? null,
         });
       }, 0);
