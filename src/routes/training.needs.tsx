@@ -50,8 +50,17 @@ function NeedsPage() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("training_needs").select("*").order("created_at", { ascending: false });
-    setRows((data as unknown as TrainingNeed[]) ?? []);
+    const all: TrainingNeed[] = [];
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase.from("training_needs").select("*")
+        .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+      if (error) { toast.error(error.message); break; }
+      const batch = (data as unknown as TrainingNeed[]) ?? [];
+      all.push(...batch);
+      if (batch.length < PAGE) break;
+    }
+    setRows(all);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -128,8 +137,11 @@ function NeedsPage() {
         created_by: auth.user!.id,
         company_id: d.company_id || null,
       }));
-      const { error } = await supabase.from("training_needs").insert(payload as never);
-      if (error) { toast.error("فشل الرفع: " + error.message); return; }
+      const CHUNK = 500;
+      for (let i = 0; i < payload.length; i += CHUNK) {
+        const { error } = await supabase.from("training_needs").insert(payload.slice(i, i + CHUNK) as never);
+        if (error) { toast.error(`فشل الرفع عند السجل ${i + 1}: ` + error.message); return; }
+      }
       toast.success(`تم رفع ${payload.length} احتياج تدريبي`);
       load();
     } catch (e) {

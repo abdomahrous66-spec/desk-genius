@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, Check, Download, Loader2, Pencil, Plus, Upload, X } from "lucide-react";
+import { ArrowRight, Check, Download, Loader2, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { TP_COLUMNS, TP_EDIT_FIELDS, NUMBER_KEYS, STATUS_LABELS, mapPlanSheetRow, type TrainingNeed } from "@/lib/training";
 
@@ -45,8 +45,17 @@ function PlanPage() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("training_needs").select("*").order("created_at", { ascending: false });
-    setRows((data as unknown as TrainingNeed[]) ?? []);
+    const all: TrainingNeed[] = [];
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase.from("training_needs").select("*")
+        .order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+      if (error) { toast.error(error.message); break; }
+      const batch = (data as unknown as TrainingNeed[]) ?? [];
+      all.push(...batch);
+      if (batch.length < PAGE) break;
+    }
+    setRows(all);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -64,9 +73,34 @@ function PlanPage() {
 
   const approveAll = async () => {
     if (!pending.length) return;
-    const { error } = await supabase.from("training_needs").update({ status: "approved" }).in("id", pending.map(r => r.id));
-    if (error) { toast.error(error.message); return; }
+    const ids = pending.map(r => r.id);
+    for (let i = 0; i < ids.length; i += 500) {
+      const { error } = await supabase.from("training_needs").update({ status: "approved" }).in("id", ids.slice(i, i + 500));
+      if (error) { toast.error(error.message); return; }
+    }
     toast.success(`تم اعتماد ${pending.length} احتياج`);
+    load();
+  };
+
+  const deleteOne = async (id: string) => {
+    if (!confirm("متأكد إنك عايز تحذف التدريب ده؟")) return;
+    const { error } = await supabase.from("training_needs").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("تم حذف السجل");
+    load();
+  };
+
+  const deleteAll = async () => {
+    const target = tab === "new" ? pending : planned;
+    if (!target.length) { toast.error("لا توجد سجلات للحذف"); return; }
+    if (!confirm(`متأكد إنك عايز تحذف كل السجلات (${target.length})؟ لا يمكن التراجع.`)) return;
+    if (!confirm("تأكيد أخير: سيتم حذف كل السجلات نهائياً.")) return;
+    const ids = target.map(r => r.id);
+    for (let i = 0; i < ids.length; i += 500) {
+      const { error } = await supabase.from("training_needs").delete().in("id", ids.slice(i, i + 500));
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success(`تم حذف ${target.length} سجل`);
     load();
   };
 
@@ -129,13 +163,18 @@ function PlanPage() {
           const row = mapPlanSheetRow(r) as Record<string, unknown>;
           const cName = Object.entries(r).find(([k]) => /company|الشركة/i.test(k))?.[1];
           const cid = uploadCompany || (cName ? byName.get(String(cName).trim().toLowerCase()) : undefined);
-          return { ...row, company_id: cid ?? null, created_by: auth.user!.id, status: "approved" };
+          return { ...row, company_id: cid ?? null, created_by: auth.user!.id, status: "approved" } as Record<string, unknown>;
         })
         .filter(r => r.training_topic && String(r.training_topic).trim());
       if (!mapped.length) { toast.error("مفيش صفوف صالحة — تأكد من عمود Training Topics"); return; }
-      const { error } = await supabase.from("training_needs").insert(mapped as never);
-      if (error) { toast.error("فشل الرفع: " + error.message); return; }
-      toast.success(`تم رفع ${mapped.length} سجل لخطة التدريب`);
+      const CHUNK = 500;
+      let inserted = 0;
+      for (let i = 0; i < mapped.length; i += CHUNK) {
+        const { error } = await supabase.from("training_needs").insert(mapped.slice(i, i + CHUNK) as never);
+        if (error) { toast.error(`فشل الرفع عند السجل ${inserted + 1}: ` + error.message); return; }
+        inserted += Math.min(CHUNK, mapped.length - i);
+      }
+      toast.success(`تم رفع ${inserted} سجل لخطة التدريب`);
       setTab("plan");
       load();
     } catch {
@@ -178,6 +217,7 @@ function PlanPage() {
           </div>
           <div className="flex gap-2">
             {tab === "new" && <Button variant="secondary" onClick={approveAll} disabled={!pending.length}><Check className="w-4 h-4 ml-1" /> اعتماد الكل</Button>}
+            <Button variant="destructive" onClick={deleteAll} disabled={loading || !list.length}><Trash2 className="w-4 h-4 ml-1" /> حذف الكل</Button>
             <Button variant="outline" onClick={exportReport}><Download className="w-4 h-4 ml-1" /> تصدير تقرير Excel</Button>
             <Button variant="outline" onClick={downloadPlanTemplate}><Download className="w-4 h-4 ml-1" /> تمبلت الخطة</Button>
             <label>
@@ -225,9 +265,13 @@ function PlanPage() {
                           <div className="flex gap-1">
                             <Button size="sm" onClick={() => setStatus(r.id, "approved")}><Check className="w-4 h-4" /></Button>
                             <Button size="sm" variant="outline" onClick={() => setStatus(r.id, "rejected")}><X className="w-4 h-4" /></Button>
+                            <Button size="sm" variant="destructive" onClick={() => deleteOne(r.id)}><Trash2 className="w-4 h-4" /></Button>
                           </div>
                         ) : (
-                          <Button size="sm" variant="outline" onClick={() => openEdit(r)}><Pencil className="w-4 h-4 ml-1" /> تعديل</Button>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" onClick={() => openEdit(r)}><Pencil className="w-4 h-4 ml-1" /> تعديل</Button>
+                            <Button size="sm" variant="destructive" onClick={() => deleteOne(r.id)}><Trash2 className="w-4 h-4" /></Button>
+                          </div>
                         )}
                       </td>
                     </tr>
