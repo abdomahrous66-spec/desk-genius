@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, Check, Download, Loader2, Pencil, Plus, Upload, X } from "lucide-react";
+import { ArrowRight, Check, Download, Loader2, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { TP_COLUMNS, TP_EDIT_FIELDS, NUMBER_KEYS, STATUS_LABELS, mapPlanSheetRow, type TrainingNeed } from "@/lib/training";
 
@@ -208,6 +208,7 @@ function PlanPage() {
           </div>
           <div className="flex gap-2">
             {tab === "new" && <Button variant="secondary" onClick={approveAll} disabled={!pending.length}><Check className="w-4 h-4 ml-1" /> اعتماد الكل</Button>}
+            <Button variant="destructive" onClick={deleteAll} disabled={loading || !list.length}><Trash2 className="w-4 h-4 ml-1" /> حذف الكل</Button>
             <Button variant="outline" onClick={exportReport}><Download className="w-4 h-4 ml-1" /> تصدير تقرير Excel</Button>
             <Button variant="outline" onClick={downloadPlanTemplate}><Download className="w-4 h-4 ml-1" /> تمبلت الخطة</Button>
             <label>
@@ -255,9 +256,13 @@ function PlanPage() {
                           <div className="flex gap-1">
                             <Button size="sm" onClick={() => setStatus(r.id, "approved")}><Check className="w-4 h-4" /></Button>
                             <Button size="sm" variant="outline" onClick={() => setStatus(r.id, "rejected")}><X className="w-4 h-4" /></Button>
+                            <Button size="sm" variant="destructive" onClick={() => deleteOne(r.id)}><Trash2 className="w-4 h-4" /></Button>
                           </div>
                         ) : (
-                          <Button size="sm" variant="outline" onClick={() => openEdit(r)}><Pencil className="w-4 h-4 ml-1" /> تعديل</Button>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" onClick={() => openEdit(r)}><Pencil className="w-4 h-4 ml-1" /> تعديل</Button>
+                            <Button size="sm" variant="destructive" onClick={() => deleteOne(r.id)}><Trash2 className="w-4 h-4" /></Button>
+                          </div>
                         )}
                       </td>
                     </tr>
