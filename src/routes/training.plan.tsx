@@ -158,9 +158,14 @@ function PlanPage() {
         })
         .filter(r => r.training_topic && String(r.training_topic).trim());
       if (!mapped.length) { toast.error("مفيش صفوف صالحة — تأكد من عمود Training Topics"); return; }
-      const { error } = await supabase.from("training_needs").insert(mapped as never);
-      if (error) { toast.error("فشل الرفع: " + error.message); return; }
-      toast.success(`تم رفع ${mapped.length} سجل لخطة التدريب`);
+      const CHUNK = 500;
+      let inserted = 0;
+      for (let i = 0; i < mapped.length; i += CHUNK) {
+        const { error } = await supabase.from("training_needs").insert(mapped.slice(i, i + CHUNK) as never);
+        if (error) { toast.error(`فشل الرفع عند السجل ${inserted + 1}: ` + error.message); return; }
+        inserted += Math.min(CHUNK, mapped.length - i);
+      }
+      toast.success(`تم رفع ${inserted} سجل لخطة التدريب`);
       setTab("plan");
       load();
     } catch {
