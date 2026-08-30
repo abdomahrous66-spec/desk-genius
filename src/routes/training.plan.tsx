@@ -64,9 +64,34 @@ function PlanPage() {
 
   const approveAll = async () => {
     if (!pending.length) return;
-    const { error } = await supabase.from("training_needs").update({ status: "approved" }).in("id", pending.map(r => r.id));
-    if (error) { toast.error(error.message); return; }
+    const ids = pending.map(r => r.id);
+    for (let i = 0; i < ids.length; i += 500) {
+      const { error } = await supabase.from("training_needs").update({ status: "approved" }).in("id", ids.slice(i, i + 500));
+      if (error) { toast.error(error.message); return; }
+    }
     toast.success(`تم اعتماد ${pending.length} احتياج`);
+    load();
+  };
+
+  const deleteOne = async (id: string) => {
+    if (!confirm("متأكد إنك عايز تحذف التدريب ده؟")) return;
+    const { error } = await supabase.from("training_needs").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("تم حذف السجل");
+    load();
+  };
+
+  const deleteAll = async () => {
+    const target = tab === "new" ? pending : planned;
+    if (!target.length) { toast.error("لا توجد سجلات للحذف"); return; }
+    if (!confirm(`متأكد إنك عايز تحذف كل السجلات (${target.length})؟ لا يمكن التراجع.`)) return;
+    if (!confirm("تأكيد أخير: سيتم حذف كل السجلات نهائياً.")) return;
+    const ids = target.map(r => r.id);
+    for (let i = 0; i < ids.length; i += 500) {
+      const { error } = await supabase.from("training_needs").delete().in("id", ids.slice(i, i + 500));
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success(`تم حذف ${target.length} سجل`);
     load();
   };
 
