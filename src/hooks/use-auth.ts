@@ -16,6 +16,7 @@ export interface AuthState {
   canManageUsers: boolean;
   canManageStructure: boolean;
   canTraining: boolean;   // can open & register training needs (TN)
+  canDelete: boolean;     // owner or explicitly granted "deleter" role
   username: string | null;
 }
 
@@ -23,6 +24,7 @@ const DEFAULT: AuthState = {
   loading: true, user: null, role: null, roles: [],
   isAdmin: false, isSuperAdmin: false, isOwner: false,
   canCreateJD: false, canManageUsers: false, canManageStructure: false, canTraining: false,
+  canDelete: false,
   username: null,
 };
 
@@ -51,6 +53,7 @@ export function useAuth(): AuthState {
         const canManageUsers = isOwner || roles.includes("super_admin");
         const canManageStructure = canManageUsers;
         const canTraining = isSuperAdmin || roles.includes("training");
+        const canDelete = isOwner || roles.includes("deleter");
         const effective: Role = isOwner
           ? "owner"
           : roles.includes("super_admin")
@@ -65,6 +68,7 @@ export function useAuth(): AuthState {
         setState({
           loading: false, user, role: effective, roles,
           isAdmin, isSuperAdmin, isOwner, canCreateJD, canManageUsers, canManageStructure, canTraining,
+          canDelete,
           username: profile?.username ?? null,
         });
       }, 0);

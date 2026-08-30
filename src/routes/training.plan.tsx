@@ -40,6 +40,8 @@ function PlanPage() {
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadCompany, setUploadCompany] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchField, setSearchField] = useState<string>("all");
 
   const companyName = useMemo(() => Object.fromEntries(companies.map(c => [c.id, c.name])), [companies]);
 
@@ -62,7 +64,20 @@ function PlanPage() {
 
   const pending = rows.filter(r => r.status === "new");
   const planned = rows.filter(r => r.status === "approved" || r.status === "completed");
-  const list = tab === "new" ? pending : planned;
+  const baseList = tab === "new" ? pending : planned;
+
+  const list = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return baseList;
+    const match = (v: unknown) => v != null && String(v).toLowerCase().includes(q);
+    return baseList.filter(r => {
+      if (searchField === "all") {
+        return Object.entries(r).some(([k, v]) => match(k === "company_id" ? companyName[String(v)] ?? v : v));
+      }
+      if (searchField === "company_id") return match(companyName[r.company_id ?? ""] ?? "");
+      return match((r as unknown as Record<string, unknown>)[searchField]);
+    });
+  }, [baseList, search, searchField, companyName]);
 
   const setStatus = async (id: string, status: string) => {
     const { error } = await supabase.from("training_needs").update({ status }).eq("id", id);
@@ -91,7 +106,7 @@ function PlanPage() {
   };
 
   const deleteAll = async () => {
-    const target = tab === "new" ? pending : planned;
+    const target = list;
     if (!target.length) { toast.error("لا توجد سجلات للحذف"); return; }
     if (!confirm(`متأكد إنك عايز تحذف كل السجلات (${target.length})؟ لا يمكن التراجع.`)) return;
     if (!confirm("تأكيد أخير: سيتم حذف كل السجلات نهائياً.")) return;
@@ -215,9 +230,9 @@ function PlanPage() {
             <Button variant={tab === "new" ? "default" : "outline"} onClick={() => setTab("new")}>طلبات بانتظار الاعتماد ({pending.length})</Button>
             <Button variant={tab === "plan" ? "default" : "outline"} onClick={() => setTab("plan")}>خطة التدريب ({planned.length})</Button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {tab === "new" && <Button variant="secondary" onClick={approveAll} disabled={!pending.length}><Check className="w-4 h-4 ml-1" /> اعتماد الكل</Button>}
-            <Button variant="destructive" onClick={deleteAll} disabled={loading || !list.length}><Trash2 className="w-4 h-4 ml-1" /> حذف الكل</Button>
+            {auth.canDelete && <Button variant="destructive" onClick={deleteAll} disabled={loading || !list.length}><Trash2 className="w-4 h-4 ml-1" /> حذف المعروض ({list.length})</Button>}
             <Button variant="outline" onClick={exportReport}><Download className="w-4 h-4 ml-1" /> تصدير تقرير Excel</Button>
             <Button variant="outline" onClick={downloadPlanTemplate}><Download className="w-4 h-4 ml-1" /> تمبلت الخطة</Button>
             <label>
@@ -235,6 +250,23 @@ function PlanPage() {
             </select>
           </div>
         </div>
+
+        <Card className="p-3 flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input className="pr-9" placeholder="ابحث بالكود أو الاسم أو التدريب أو القطاع أو الوظيفة…"
+              value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <select className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={searchField} onChange={e => setSearchField(e.target.value)}>
+            {SEARCH_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+          </select>
+          {search && (
+            <Button variant="ghost" size="sm" onClick={() => setSearch("")}><X className="w-4 h-4 ml-1" /> مسح</Button>
+          )}
+          <span className="text-sm text-muted-foreground">النتائج: {list.length}</span>
+        </Card>
+
 
         <Card className="p-4">
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : list.length === 0 ? (
