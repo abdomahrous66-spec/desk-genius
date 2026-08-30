@@ -40,6 +40,8 @@ function PlanPage() {
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadCompany, setUploadCompany] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchField, setSearchField] = useState<string>("all");
 
   const companyName = useMemo(() => Object.fromEntries(companies.map(c => [c.id, c.name])), [companies]);
 
@@ -62,7 +64,20 @@ function PlanPage() {
 
   const pending = rows.filter(r => r.status === "new");
   const planned = rows.filter(r => r.status === "approved" || r.status === "completed");
-  const list = tab === "new" ? pending : planned;
+  const baseList = tab === "new" ? pending : planned;
+
+  const list = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return baseList;
+    const match = (v: unknown) => v != null && String(v).toLowerCase().includes(q);
+    return baseList.filter(r => {
+      if (searchField === "all") {
+        return Object.entries(r).some(([k, v]) => match(k === "company_id" ? companyName[String(v)] ?? v : v));
+      }
+      if (searchField === "company_id") return match(companyName[r.company_id ?? ""] ?? "");
+      return match((r as unknown as Record<string, unknown>)[searchField]);
+    });
+  }, [baseList, search, searchField, companyName]);
 
   const setStatus = async (id: string, status: string) => {
     const { error } = await supabase.from("training_needs").update({ status }).eq("id", id);
