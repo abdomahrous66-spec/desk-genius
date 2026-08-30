@@ -106,7 +106,7 @@ function PlanPage() {
   };
 
   const deleteAll = async () => {
-    const target = tab === "new" ? pending : planned;
+    const target = list;
     if (!target.length) { toast.error("لا توجد سجلات للحذف"); return; }
     if (!confirm(`متأكد إنك عايز تحذف كل السجلات (${target.length})؟ لا يمكن التراجع.`)) return;
     if (!confirm("تأكيد أخير: سيتم حذف كل السجلات نهائياً.")) return;
