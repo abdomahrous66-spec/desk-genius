@@ -163,7 +163,7 @@ function PlanPage() {
           const row = mapPlanSheetRow(r) as Record<string, unknown>;
           const cName = Object.entries(r).find(([k]) => /company|الشركة/i.test(k))?.[1];
           const cid = uploadCompany || (cName ? byName.get(String(cName).trim().toLowerCase()) : undefined);
-          return { ...row, company_id: cid ?? null, created_by: auth.user!.id, status: "approved" };
+          return { ...row, company_id: cid ?? null, created_by: auth.user!.id, status: "approved" } as Record<string, unknown>;
         })
         .filter(r => r.training_topic && String(r.training_topic).trim());
       if (!mapped.length) { toast.error("مفيش صفوف صالحة — تأكد من عمود Training Topics"); return; }
