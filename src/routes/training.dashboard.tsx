@@ -42,8 +42,16 @@ function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("training_needs").select("*");
-      setRows((data as unknown as TrainingNeed[]) ?? []);
+      const all: TrainingNeed[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase.from("training_needs").select("*").range(from, from + PAGE - 1);
+        if (error) break;
+        const batch = (data as unknown as TrainingNeed[]) ?? [];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      setRows(all);
       setLoading(false);
     })();
   }, []);
