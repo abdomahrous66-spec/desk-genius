@@ -32,7 +32,7 @@ export const Route = createFileRoute("/users")({
 
 type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; roles: string[] };
 type ScopeRow = { user_id: string; company_id: string | null; sector: string | null; department: string | null };
-type AssignableRole = "viewer" | "admin" | "training" | "super_admin";
+type AssignableRole = "viewer" | "admin" | "training" | "deleter" | "super_admin";
 
 const scopesTable = () => (supabase as unknown as {
   from: (t: string) => {
@@ -99,6 +99,19 @@ function UsersPage() {
     load();
   };
 
+  const toggleDeleter = async (id: string, has: boolean) => {
+    if (has) {
+      const { error } = await supabase.from("user_roles").delete().eq("user_id", id).eq("role", "deleter");
+      if (error) { toast.error("فشل إلغاء صلاحية الحذف"); return; }
+      toast.success("تم إلغاء صلاحية الحذف");
+    } else {
+      const { error } = await supabase.from("user_roles").insert({ user_id: id, role: "deleter" });
+      if (error) { toast.error("فشل منح صلاحية الحذف"); return; }
+      toast.success("تم منح صلاحية الحذف");
+    }
+    load();
+  };
+
   const remove = async (id: string) => {
     setDeletingId(id);
     const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { target_user_id: id } });
@@ -145,7 +158,8 @@ function UsersPage() {
                 <SelectContent>
                   <SelectItem value="viewer">عرض فقط</SelectItem>
                   <SelectItem value="admin">إنشاء وعرض JD</SelectItem>
-                  <SelectItem value="training">تسجيل الاحتياجات التدريبية (TN)</SelectItem>
+                  <SelectItem value="training">Training needs (TN)</SelectItem>
+                  <SelectItem value="deleter">Delete training records</SelectItem>
                   {auth.isOwner && <SelectItem value="super_admin">Super Admin</SelectItem>}
                 </SelectContent>
               </Select>

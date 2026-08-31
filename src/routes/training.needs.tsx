@@ -261,8 +261,8 @@ function NeedsPage() {
                       <td className="p-2">{r.training_priority || "—"}</td>
                       <td className="p-2">{STATUS_LABELS[r.status] ?? r.status}</td>
                       <td className="p-2">
-                        {r.status === "new" && (
-                          <Button size="sm" variant="ghost" onClick={() => remove(r.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                        {auth.canDelete && r.status === "new" && (
+                          <Button size="sm" variant="ghost" onClick={() => remove(r.id)} aria-label="Delete training need"><Trash2 className="w-4 h-4 text-destructive" /></Button>
                         )}
                       </td>
                     </tr>
