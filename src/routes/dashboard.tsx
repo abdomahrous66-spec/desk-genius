@@ -26,6 +26,7 @@ type Row = {
 };
 
 function Dashboard() {
+  const auth = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
