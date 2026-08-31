@@ -99,6 +99,19 @@ function UsersPage() {
     load();
   };
 
+  const toggleDeleter = async (id: string, has: boolean) => {
+    if (has) {
+      const { error } = await supabase.from("user_roles").delete().eq("user_id", id).eq("role", "deleter");
+      if (error) { toast.error("فشل إلغاء صلاحية الحذف"); return; }
+      toast.success("تم إلغاء صلاحية الحذف");
+    } else {
+      const { error } = await supabase.from("user_roles").insert({ user_id: id, role: "deleter" });
+      if (error) { toast.error("فشل منح صلاحية الحذف"); return; }
+      toast.success("تم منح صلاحية الحذف");
+    }
+    load();
+  };
+
   const remove = async (id: string) => {
     setDeletingId(id);
     const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { target_user_id: id } });
