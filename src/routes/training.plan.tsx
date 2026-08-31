@@ -10,9 +10,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, Check, Download, Loader2, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
+import { ArrowRight, Check, Download, Loader2, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { TP_COLUMNS, TP_EDIT_FIELDS, NUMBER_KEYS, STATUS_LABELS, mapPlanSheetRow, type TrainingNeed } from "@/lib/training";
+
+const SEARCH_FIELDS: { key: string; label: string }[] = [
+  { key: "all", label: "All fields" },
+  { key: "employee_code", label: "Employee code" },
+  { key: "employee_name", label: "Employee name" },
+  { key: "training_topic", label: "Training topic" },
+  { key: "sector", label: "Sector" },
+  { key: "department", label: "Department" },
+  { key: "position_title", label: "Position" },
+  { key: "company_id", label: "Company" },
+  { key: "training_type", label: "Training type" },
+  { key: "training_provider", label: "Training provider" },
+  { key: "training_status", label: "Training status" },
+  { key: "attendance_status", label: "Attendance status" },
+  { key: "implementation_year", label: "Implementation year" },
+];
 
 export const Route = createFileRoute("/training/plan")({
   head: () => ({

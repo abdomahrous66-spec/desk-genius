@@ -158,7 +158,8 @@ function UsersPage() {
                 <SelectContent>
                   <SelectItem value="viewer">عرض فقط</SelectItem>
                   <SelectItem value="admin">إنشاء وعرض JD</SelectItem>
-                  <SelectItem value="training">تسجيل الاحتياجات التدريبية (TN)</SelectItem>
+                  <SelectItem value="training">Training needs (TN)</SelectItem>
+                  <SelectItem value="deleter">Delete training records</SelectItem>
                   {auth.isOwner && <SelectItem value="super_admin">Super Admin</SelectItem>}
                 </SelectContent>
               </Select>

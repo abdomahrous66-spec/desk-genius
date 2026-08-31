@@ -9,8 +9,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-
 import { RequireAuth } from "@/components/RequireAuth";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/dashboard")({
   component: () => (<RequireAuth requireRole="admin"><Dashboard /></RequireAuth>),
