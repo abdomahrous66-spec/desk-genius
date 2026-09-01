@@ -4,29 +4,46 @@ import type { User } from "@supabase/supabase-js";
 
 export type Role = "viewer" | "manager" | "admin" | "training" | "super_admin" | "owner" | null;
 
+export type ScopeGrant = {
+  company_id: string | null;
+  sector: string | null;
+  department: string | null;
+  can_view_jd: boolean;
+  can_view_tp: boolean;
+  can_create_jd: boolean;
+  can_create_tn: boolean;
+  can_delete: boolean;
+};
+
 export interface AuthState {
   loading: boolean;
   user: User | null;
   role: Role;               // effective role: owner > super_admin > admin/manager > viewer
   roles: string[];          // all roles the user holds
-  isAdmin: boolean;         // can create/view job descriptions
+  scopes: ScopeGrant[];     // scoped grants (company/sector/department + permissions)
+  unrestricted: boolean;    // owner, or super admin with no scope restriction
+  isAdmin: boolean;         // can view job descriptions
   isSuperAdmin: boolean;
   isOwner: boolean;
   canCreateJD: boolean;
+  canViewJD: boolean;
+  canViewTP: boolean;       // can open training plan / dashboard
   canManageUsers: boolean;
   canManageStructure: boolean;
   canTraining: boolean;   // can open & register training needs (TN)
-  canDelete: boolean;     // owner or explicitly granted "deleter" role
+  canDelete: boolean;     // owner, "deleter" role, or a scope with delete permission
   username: string | null;
 }
 
 const DEFAULT: AuthState = {
-  loading: true, user: null, role: null, roles: [],
+  loading: true, user: null, role: null, roles: [], scopes: [], unrestricted: false,
   isAdmin: false, isSuperAdmin: false, isOwner: false,
-  canCreateJD: false, canManageUsers: false, canManageStructure: false, canTraining: false,
+  canCreateJD: false, canViewJD: false, canViewTP: false,
+  canManageUsers: false, canManageStructure: false, canTraining: false,
   canDelete: false,
   username: null,
 };
+
 
 export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>(DEFAULT);
