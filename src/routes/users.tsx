@@ -385,6 +385,29 @@ function ScopesDialog({ userId, username, currentScopes, onSaved }: {
           </Select>
         </div>
 
+        <Card className="p-3 bg-muted/30">
+          <div className="font-semibold text-sm mb-2">الصلاحيات داخل النطاق ده</div>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {PERMS.map(p => (
+              <label key={p.key} className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked={perms[p.key]}
+                  onCheckedChange={() => setPerms(prev => ({ ...prev, [p.key]: !prev[p.key] }))}
+                />
+                <span>
+                  {p.label}
+                  <span className="block text-xs text-muted-foreground">{p.hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            الصلاحيات دي بتتطبق على القطاعات/الإدارات المختارة تحت في الشركة دي بس.
+          </p>
+        </Card>
+
+
+
         {loading ? (
           <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : (
