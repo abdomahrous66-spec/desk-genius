@@ -345,9 +345,11 @@ function ScopesDialog({ userId, username, currentScopes, onSaved }: {
           company_id: companyId,
           sector: sector === "*" ? null : sector,
           department: d === "*" ? null : d,
+          ...perms,
         });
       }
     }
+
     if (rowsToInsert.length > 0) {
       const { error: insErr } = await scopesTable().insert(rowsToInsert);
       if (insErr) { toast.error("فشل حفظ الصلاحيات"); setSaving(false); return; }
