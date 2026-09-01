@@ -87,7 +87,7 @@ function UsersPage() {
       return rank(a.roles) - rank(b.roles);
     });
     setRows(merged);
-    const { data: sc } = await scopesTable().select("user_id,company_id,sector,department");
+    const { data: sc } = await scopesTable().select("user_id,company_id,sector,department,can_view_jd,can_view_tp,can_create_jd,can_create_tn,can_delete");
     setScopes(sc ?? []);
     setLoading(false);
   };
