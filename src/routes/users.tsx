@@ -31,7 +31,19 @@ export const Route = createFileRoute("/users")({
 });
 
 type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; roles: string[] };
-type ScopeRow = { user_id: string; company_id: string | null; sector: string | null; department: string | null };
+type ScopeRow = {
+  user_id: string; company_id: string | null; sector: string | null; department: string | null;
+  can_view_jd?: boolean; can_view_tp?: boolean; can_create_jd?: boolean; can_create_tn?: boolean; can_delete?: boolean;
+};
+type PermKey = "can_view_jd" | "can_view_tp" | "can_create_jd" | "can_create_tn" | "can_delete";
+const PERMS: { key: PermKey; label: string; hint: string }[] = [
+  { key: "can_view_jd", label: "عرض الوصف الوظيفي (JD)", hint: "يشوف الـ JDs داخل النطاق ده" },
+  { key: "can_view_tp", label: "عرض بيانات التدريب (TP)", hint: "يشوف خطة التدريب والداشبورد داخل النطاق" },
+  { key: "can_create_jd", label: "إنشاء وصف وظيفي (JD)", hint: "يقدر يعمل تحليل وظيفي جديد" },
+  { key: "can_create_tn", label: "تسجيل احتياج تدريبي (TN)", hint: "يقدر يسجل احتياجات التدريب" },
+  { key: "can_delete", label: "الحذف", hint: "يقدر يحذف السجلات داخل النطاق" },
+];
+
 type AssignableRole = "viewer" | "admin" | "training" | "deleter" | "super_admin";
 
 const scopesTable = () => (supabase as unknown as {
