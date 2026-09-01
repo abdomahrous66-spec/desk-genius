@@ -40,23 +40,36 @@ export function useAuth(): AuthState {
         return;
       }
       setTimeout(async () => {
-        const [{ data: roleRows }, { data: profile }] = await Promise.all([
+        const [{ data: roleRows }, { data: profile }, { data: scopeRows }] = await Promise.all([
           supabase.from("user_roles").select("role").eq("user_id", user.id),
           supabase.from("profiles").select("username").eq("user_id", user.id).maybeSingle(),
+          supabase.from("user_scopes")
+            .select("company_id,sector,department,can_view_jd,can_view_tp,can_create_jd,can_create_tn,can_delete")
+            .eq("user_id", user.id),
         ]);
         if (!mounted) return;
         const roles = (roleRows ?? []).map(r => r.role as string);
+        const scopes = (scopeRows ?? []) as ScopeGrant[];
+        const scoped = scopes.length > 0;
+        const anyFlag = (k: keyof ScopeGrant) => scopes.some(s => Boolean(s[k]));
+
         const isOwner = roles.includes("owner");
-        const isSuperAdmin = isOwner || roles.includes("super_admin");
-        const canCreateJD = isSuperAdmin || roles.includes("admin") || roles.includes("manager");
-        const isAdmin = canCreateJD;
-        const canManageUsers = isOwner || roles.includes("super_admin");
+        const hasSuper = roles.includes("super_admin");
+        const unrestricted = isOwner || (hasSuper && !scoped);
+        const isSuperAdmin = isOwner || hasSuper;
+
+        const roleCreateJD = isSuperAdmin || roles.includes("admin") || roles.includes("manager");
+        const canCreateJD = unrestricted || (scoped ? anyFlag("can_create_jd") : roleCreateJD);
+        const canViewJD = unrestricted || (scoped ? anyFlag("can_view_jd") || anyFlag("can_create_jd") : roleCreateJD);
+        const isAdmin = canViewJD;
+        const canManageUsers = isOwner || hasSuper;
         const canManageStructure = canManageUsers;
-        const canTraining = isSuperAdmin || roles.includes("training");
-        const canDelete = isOwner || roles.includes("deleter");
+        const canViewTP = unrestricted || (scoped ? anyFlag("can_view_tp") : isSuperAdmin);
+        const canTraining = unrestricted || (scoped ? anyFlag("can_create_tn") : isSuperAdmin || roles.includes("training"));
+        const canDelete = isOwner || roles.includes("deleter") || anyFlag("can_delete");
         const effective: Role = isOwner
           ? "owner"
-          : roles.includes("super_admin")
+          : hasSuper
             ? "super_admin"
             : roles.includes("admin")
               ? "admin"
@@ -66,12 +79,14 @@ export function useAuth(): AuthState {
                   ? "viewer"
                   : null;
         setState({
-          loading: false, user, role: effective, roles,
-          isAdmin, isSuperAdmin, isOwner, canCreateJD, canManageUsers, canManageStructure, canTraining,
+          loading: false, user, role: effective, roles, scopes, unrestricted,
+          isAdmin, isSuperAdmin, isOwner, canCreateJD, canViewJD, canViewTP,
+          canManageUsers, canManageStructure, canTraining,
           canDelete,
           username: profile?.username ?? null,
         });
       }, 0);
+
     };
 
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => loadRole(session?.user ?? null));
