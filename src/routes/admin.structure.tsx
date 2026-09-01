@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useStructure, type Position } from "@/hooks/use-structure";
 
 export const Route = createFileRoute("/admin/structure")({
-  component: () => (<RequireAuth requireRole="super_admin"><AdminStructurePage /></RequireAuth>),
+  component: () => (<RequireAuth requireCap="manageStructure"><AdminStructurePage /></RequireAuth>),
 });
 
 type Row = {

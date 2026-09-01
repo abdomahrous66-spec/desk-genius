@@ -41,7 +41,7 @@ export const Route = createFileRoute("/training/plan")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => (<RequireAuth requireRole="super_admin"><PlanPage /></RequireAuth>),
+  component: () => (<RequireAuth requireCap="viewTP"><PlanPage /></RequireAuth>),
 });
 
 function PlanPage() {
