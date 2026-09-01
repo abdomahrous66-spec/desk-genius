@@ -264,35 +264,42 @@ function ScopesDialog({ userId, username, currentScopes, onSaved }: {
   const [companyId, setCompanyId] = useState<string>("");
   // Map sector -> Set<dept|*>
   const [selection, setSelection] = useState<Record<string, Set<string>>>({});
+  const [perms, setPerms] = useState<Record<PermKey, boolean>>({
+    can_view_jd: true, can_view_tp: false, can_create_jd: false, can_create_tn: false, can_delete: false,
+  });
+
+  const hydrate = (cid: string) => {
+    const map: Record<string, Set<string>> = {};
+    const p: Record<PermKey, boolean> = {
+      can_view_jd: false, can_view_tp: false, can_create_jd: false, can_create_tn: false, can_delete: false,
+    };
+    let found = false;
+    for (const s of currentScopes) {
+      if (s.company_id !== cid) continue;
+      found = true;
+      const sec = s.sector || "*";
+      if (!map[sec]) map[sec] = new Set();
+      map[sec].add(s.department ?? "*");
+      for (const k of PERMS) if (s[k.key]) p[k.key] = true;
+    }
+    setSelection(map);
+    setPerms(found ? p : { can_view_jd: true, can_view_tp: false, can_create_jd: false, can_create_tn: false, can_delete: false });
+  };
 
   useEffect(() => {
     if (!open) return;
-    // Group current scopes by company
-    const companies = Array.from(new Set(currentScopes.map(s => s.company_id).filter(Boolean))) as string[];
-    const cid = companies[0] || childCompanies[0]?.id || "";
+    const withScopes = Array.from(new Set(currentScopes.map(s => s.company_id).filter(Boolean))) as string[];
+    const cid = withScopes[0] || childCompanies[0]?.id || "";
     setCompanyId(cid);
-    const map: Record<string, Set<string>> = {};
-    for (const s of currentScopes) {
-      if (s.company_id !== cid) continue;
-      const sec = s.sector || "*";
-      if (!map[sec]) map[sec] = new Set();
-      map[sec].add(s.department ?? "*");
-    }
-    setSelection(map);
+    hydrate(cid);
   }, [open, currentScopes, childCompanies]);
 
-  // Reload selection when switching companies (preserves saved selections in DB only)
+  // Reload selection when switching companies
   useEffect(() => {
     if (!open || !companyId) return;
-    const map: Record<string, Set<string>> = {};
-    for (const s of currentScopes) {
-      if (s.company_id !== companyId) continue;
-      const sec = s.sector || "*";
-      if (!map[sec]) map[sec] = new Set();
-      map[sec].add(s.department ?? "*");
-    }
-    setSelection(map);
+    hydrate(companyId);
   }, [companyId]);
+
 
   const sectorList = useMemo(() => {
     if (!companyId) return [] as string[];
