@@ -25,7 +25,7 @@ export const Route = createFileRoute("/training/dashboard")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => (<RequireAuth><DashboardPage /></RequireAuth>),
+  component: () => (<RequireAuth requireCap="viewTP"><DashboardPage /></RequireAuth>),
 });
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2, 210 90% 60%))", "hsl(var(--muted-foreground))", "hsl(var(--destructive))", "hsl(var(--accent-foreground))"];

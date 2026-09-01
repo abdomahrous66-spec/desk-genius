@@ -31,7 +31,19 @@ export const Route = createFileRoute("/users")({
 });
 
 type Manager = { user_id: string; username: string; display_name: string | null; created_at: string; roles: string[] };
-type ScopeRow = { user_id: string; company_id: string | null; sector: string | null; department: string | null };
+type ScopeRow = {
+  user_id: string; company_id: string | null; sector: string | null; department: string | null;
+  can_view_jd?: boolean; can_view_tp?: boolean; can_create_jd?: boolean; can_create_tn?: boolean; can_delete?: boolean;
+};
+type PermKey = "can_view_jd" | "can_view_tp" | "can_create_jd" | "can_create_tn" | "can_delete";
+const PERMS: { key: PermKey; label: string; hint: string }[] = [
+  { key: "can_view_jd", label: "عرض الوصف الوظيفي (JD)", hint: "يشوف الـ JDs داخل النطاق ده" },
+  { key: "can_view_tp", label: "عرض بيانات التدريب (TP)", hint: "يشوف خطة التدريب والداشبورد داخل النطاق" },
+  { key: "can_create_jd", label: "إنشاء وصف وظيفي (JD)", hint: "يقدر يعمل تحليل وظيفي جديد" },
+  { key: "can_create_tn", label: "تسجيل احتياج تدريبي (TN)", hint: "يقدر يسجل احتياجات التدريب" },
+  { key: "can_delete", label: "الحذف", hint: "يقدر يحذف السجلات داخل النطاق" },
+];
+
 type AssignableRole = "viewer" | "admin" | "training" | "deleter" | "super_admin";
 
 const scopesTable = () => (supabase as unknown as {
@@ -75,7 +87,7 @@ function UsersPage() {
       return rank(a.roles) - rank(b.roles);
     });
     setRows(merged);
-    const { data: sc } = await scopesTable().select("user_id,company_id,sector,department");
+    const { data: sc } = await scopesTable().select("user_id,company_id,sector,department,can_view_jd,can_view_tp,can_create_jd,can_create_tn,can_delete");
     setScopes(sc ?? []);
     setLoading(false);
   };
@@ -252,35 +264,42 @@ function ScopesDialog({ userId, username, currentScopes, onSaved }: {
   const [companyId, setCompanyId] = useState<string>("");
   // Map sector -> Set<dept|*>
   const [selection, setSelection] = useState<Record<string, Set<string>>>({});
+  const [perms, setPerms] = useState<Record<PermKey, boolean>>({
+    can_view_jd: true, can_view_tp: false, can_create_jd: false, can_create_tn: false, can_delete: false,
+  });
+
+  const hydrate = (cid: string) => {
+    const map: Record<string, Set<string>> = {};
+    const p: Record<PermKey, boolean> = {
+      can_view_jd: false, can_view_tp: false, can_create_jd: false, can_create_tn: false, can_delete: false,
+    };
+    let found = false;
+    for (const s of currentScopes) {
+      if (s.company_id !== cid) continue;
+      found = true;
+      const sec = s.sector || "*";
+      if (!map[sec]) map[sec] = new Set();
+      map[sec].add(s.department ?? "*");
+      for (const k of PERMS) if (s[k.key]) p[k.key] = true;
+    }
+    setSelection(map);
+    setPerms(found ? p : { can_view_jd: true, can_view_tp: false, can_create_jd: false, can_create_tn: false, can_delete: false });
+  };
 
   useEffect(() => {
     if (!open) return;
-    // Group current scopes by company
-    const companies = Array.from(new Set(currentScopes.map(s => s.company_id).filter(Boolean))) as string[];
-    const cid = companies[0] || childCompanies[0]?.id || "";
+    const withScopes = Array.from(new Set(currentScopes.map(s => s.company_id).filter(Boolean))) as string[];
+    const cid = withScopes[0] || childCompanies[0]?.id || "";
     setCompanyId(cid);
-    const map: Record<string, Set<string>> = {};
-    for (const s of currentScopes) {
-      if (s.company_id !== cid) continue;
-      const sec = s.sector || "*";
-      if (!map[sec]) map[sec] = new Set();
-      map[sec].add(s.department ?? "*");
-    }
-    setSelection(map);
+    hydrate(cid);
   }, [open, currentScopes, childCompanies]);
 
-  // Reload selection when switching companies (preserves saved selections in DB only)
+  // Reload selection when switching companies
   useEffect(() => {
     if (!open || !companyId) return;
-    const map: Record<string, Set<string>> = {};
-    for (const s of currentScopes) {
-      if (s.company_id !== companyId) continue;
-      const sec = s.sector || "*";
-      if (!map[sec]) map[sec] = new Set();
-      map[sec].add(s.department ?? "*");
-    }
-    setSelection(map);
+    hydrate(companyId);
   }, [companyId]);
+
 
   const sectorList = useMemo(() => {
     if (!companyId) return [] as string[];
@@ -326,9 +345,11 @@ function ScopesDialog({ userId, username, currentScopes, onSaved }: {
           company_id: companyId,
           sector: sector === "*" ? null : sector,
           department: d === "*" ? null : d,
+          ...perms,
         });
       }
     }
+
     if (rowsToInsert.length > 0) {
       const { error: insErr } = await scopesTable().insert(rowsToInsert);
       if (insErr) { toast.error("فشل حفظ الصلاحيات"); setSaving(false); return; }
@@ -363,6 +384,29 @@ function ScopesDialog({ userId, username, currentScopes, onSaved }: {
             </SelectContent>
           </Select>
         </div>
+
+        <Card className="p-3 bg-muted/30">
+          <div className="font-semibold text-sm mb-2">الصلاحيات داخل النطاق ده</div>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {PERMS.map(p => (
+              <label key={p.key} className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked={perms[p.key]}
+                  onCheckedChange={() => setPerms(prev => ({ ...prev, [p.key]: !prev[p.key] }))}
+                />
+                <span>
+                  {p.label}
+                  <span className="block text-xs text-muted-foreground">{p.hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            الصلاحيات دي بتتطبق على القطاعات/الإدارات المختارة تحت في الشركة دي بس.
+          </p>
+        </Card>
+
+
 
         {loading ? (
           <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>

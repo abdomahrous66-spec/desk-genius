@@ -13,7 +13,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/dashboard")({
-  component: () => (<RequireAuth requireRole="admin"><Dashboard /></RequireAuth>),
+  component: () => (<RequireAuth requireCap="viewJD"><Dashboard /></RequireAuth>),
 });
 
 type Row = {
