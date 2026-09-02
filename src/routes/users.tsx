@@ -214,10 +214,18 @@ function UsersPage() {
                       </div>
                       {r.display_name && <div className="text-sm text-muted-foreground">{r.display_name}</div>}
                       {canScope && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {userScopes.length === 0 ? "بدون قيود — يقدر يشوف كل الهيكل" : `صلاحيات على ${userScopes.length} عنصر`}
+                        <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                          <div>{userScopes.length === 0 ? "بدون قيود — يقدر يشوف كل الهيكل" : `صلاحيات على ${userScopes.length} عنصر`}</div>
+                          {userScopes.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {PERMS.filter(p => userScopes.some(s => s[p.key])).map(p => (
+                                <span key={p.key} className="bg-primary/10 text-primary px-2 py-0.5 rounded">{p.label}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
+
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {canScope && (
