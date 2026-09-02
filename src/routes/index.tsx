@@ -104,10 +104,11 @@ function Index() {
   if (auth.canTraining) {
     trainingTiles.push({ to: "/training/needs", icon: ClipboardList, title: "الاحتياجات التدريبية (TN)", desc: "المديرون يسجلون احتياجات فرقهم يدوياً أو برفع شيت Excel." });
   }
-  if (isOD) {
+  if (auth.canViewTP || isOD) {
     trainingTiles.push({ to: "/training/plan", icon: CalendarCheck, title: "خطة التدريب (TP)", desc: "اعتماد الاحتياجات وترحيلها للخطة واستكمال بياناتها وتصدير التقرير." });
     trainingTiles.push({ to: "/training/dashboard", icon: BarChart3, title: "Training Dashboard", desc: "مؤشرات التدريب: التكلفة، الأيام والساعات، الفعالية والتقييمات." });
   }
+
 
   return (
     <div className="min-h-screen flex flex-col" dir="rtl">
