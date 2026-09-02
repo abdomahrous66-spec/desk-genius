@@ -84,8 +84,11 @@ function Index() {
   const jdTiles: Tile[] = [];
   if (canCreateJD) {
     jdTiles.push({ to: "/submit", search: { company_id: "", sector: "", department: "", position: "" }, icon: Send, title: "ابدأ تحليل وظيفي", desc: "املأ استمارة التحليل والـ AI يولّد الوصف الوظيفي كامل بصيغة Word." });
+  }
+  if (auth.canViewJD) {
     jdTiles.push({ to: "/dashboard", icon: Clock, title: "الأوصاف الوظيفية (JD)", desc: "كل الـ JDs اللي اتعملت — عرض، تعديل، تحميل، وحذف." });
   }
+
 
   const structureTiles: Tile[] = [
     { to: "/structure", icon: Layers, title: "الهيكل التنظيمي", desc: "شجرة الشركات والقطاعات والإدارات والوظائف." },
