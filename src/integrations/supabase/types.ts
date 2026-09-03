@@ -375,6 +375,8 @@ export type Database = {
       }
       user_scopes: {
         Row: {
+          can_admin_jd: boolean
+          can_admin_tp: boolean
           can_create_jd: boolean
           can_create_tn: boolean
           can_delete: boolean
@@ -388,6 +390,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          can_admin_jd?: boolean
+          can_admin_tp?: boolean
           can_create_jd?: boolean
           can_create_tn?: boolean
           can_delete?: boolean
@@ -401,6 +405,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          can_admin_jd?: boolean
+          can_admin_tp?: boolean
           can_create_jd?: boolean
           can_create_tn?: boolean
           can_delete?: boolean
