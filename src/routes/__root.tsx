@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { LanguageProvider } from "@/hooks/use-i18n";
 
 import appCss from "../styles.css?url";
 
@@ -69,5 +70,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <LanguageProvider>
+      <Outlet />
+    </LanguageProvider>
+  );
 }
