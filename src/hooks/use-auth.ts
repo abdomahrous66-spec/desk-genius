@@ -13,6 +13,8 @@ export type ScopeGrant = {
   can_create_jd: boolean;
   can_create_tn: boolean;
   can_delete: boolean;
+  can_admin_jd: boolean;
+  can_admin_tp: boolean;
 };
 
 export interface AuthState {
@@ -28,6 +30,8 @@ export interface AuthState {
   canCreateJD: boolean;
   canViewJD: boolean;
   canViewTP: boolean;       // can open training plan / dashboard
+  canAdminJD: boolean;      // can approve/edit others' JD inside scope
+  canAdminTP: boolean;      // can administer training plan inside scope
   canManageUsers: boolean;
   canManageStructure: boolean;
   canTraining: boolean;   // can open & register training needs (TN)
@@ -39,10 +43,12 @@ const DEFAULT: AuthState = {
   loading: true, user: null, role: null, roles: [], scopes: [], unrestricted: false,
   isAdmin: false, isSuperAdmin: false, isOwner: false,
   canCreateJD: false, canViewJD: false, canViewTP: false,
+  canAdminJD: false, canAdminTP: false,
   canManageUsers: false, canManageStructure: false, canTraining: false,
   canDelete: false,
   username: null,
 };
+
 
 
 export function useAuth(): AuthState {
