@@ -1,7 +1,9 @@
 import { useAuth, type ScopeGrant } from "@/hooks/use-auth";
 
 export type Scope = ScopeGrant;
-export type Perm = "can_view_jd" | "can_view_tp" | "can_create_jd" | "can_create_tn" | "can_delete";
+export type Perm =
+  | "can_view_jd" | "can_view_tp" | "can_create_jd" | "can_create_tn" | "can_delete"
+  | "can_admin_jd" | "can_admin_tp";
 
 /**
  * Current user's allowed scopes + per-scope permissions.
@@ -10,7 +12,8 @@ export type Perm = "can_view_jd" | "can_view_tp" | "can_create_jd" | "can_create
  */
 export function useScopes() {
   const auth = useAuth();
-  const scopes: Scope[] | null = auth.unrestricted || auth.scopes.length === 0 ? null : auth.scopes;
+  const scopes: Scope[] | null = auth.unrestricted ? null : auth.scopes;
+
 
   const match = (s: Scope, companyId?: string | null, sector?: string | null, department?: string | null) =>
     (s.company_id === null || !companyId || s.company_id === companyId) &&
