@@ -67,7 +67,7 @@ export function useAuth(): AuthState {
           supabase.from("user_roles").select("role").eq("user_id", user.id),
           supabase.from("profiles").select("username").eq("user_id", user.id).maybeSingle(),
           supabase.from("user_scopes")
-            .select("company_id,sector,department,can_view_jd,can_view_tp,can_create_jd,can_create_tn,can_delete")
+            .select("company_id,sector,department,can_view_jd,can_view_tp,can_create_jd,can_create_tn,can_delete,can_admin_jd,can_admin_tp")
             .eq("user_id", user.id),
         ]);
         if (!mounted) return;
@@ -81,14 +81,16 @@ export function useAuth(): AuthState {
         const unrestricted = isOwner || (hasSuper && !scoped);
         const isSuperAdmin = isOwner || hasSuper;
 
-        const roleCreateJD = isSuperAdmin || roles.includes("admin") || roles.includes("manager");
-        const canCreateJD = unrestricted || (scoped ? anyFlag("can_create_jd") : roleCreateJD);
-        const canViewJD = unrestricted || (scoped ? anyFlag("can_view_jd") || anyFlag("can_create_jd") : roleCreateJD);
+        // Ordinary users are denied by default: capabilities come from explicit scope grants only.
+        const canCreateJD = unrestricted || (scoped && anyFlag("can_create_jd"));
+        const canViewJD = unrestricted || (scoped && (anyFlag("can_view_jd") || anyFlag("can_create_jd") || anyFlag("can_admin_jd")));
         const isAdmin = canViewJD;
         const canManageUsers = isOwner || hasSuper;
         const canManageStructure = canManageUsers;
-        const canViewTP = unrestricted || (scoped ? anyFlag("can_view_tp") : isSuperAdmin);
-        const canTraining = unrestricted || (scoped ? anyFlag("can_create_tn") : isSuperAdmin || roles.includes("training"));
+        const canViewTP = unrestricted || (scoped && (anyFlag("can_view_tp") || anyFlag("can_admin_tp")));
+        const canTraining = unrestricted || (scoped && (anyFlag("can_create_tn") || anyFlag("can_admin_tp")));
+        const canAdminJD = unrestricted || (scoped && anyFlag("can_admin_jd"));
+        const canAdminTP = unrestricted || (scoped && anyFlag("can_admin_tp"));
         const canDelete = isOwner || roles.includes("deleter") || anyFlag("can_delete");
         const effective: Role = isOwner
           ? "owner"
@@ -104,10 +106,12 @@ export function useAuth(): AuthState {
         setState({
           loading: false, user, role: effective, roles, scopes, unrestricted,
           isAdmin, isSuperAdmin, isOwner, canCreateJD, canViewJD, canViewTP,
+          canAdminJD, canAdminTP,
           canManageUsers, canManageStructure, canTraining,
           canDelete,
           username: profile?.username ?? null,
         });
+
       }, 0);
 
     };
