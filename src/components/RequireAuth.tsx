@@ -4,17 +4,21 @@ import { useAuth, type Role, type AuthState } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
 export type Capability =
-  | "viewJD" | "createJD" | "createTN" | "viewTP" | "manageStructure" | "manageUsers" | "delete";
+  | "viewJD" | "createJD" | "createTN" | "viewTP" | "adminJD" | "adminTP"
+  | "manageStructure" | "manageUsers" | "delete";
 
 const CAP_MAP: Record<Capability, keyof AuthState> = {
   viewJD: "canViewJD",
   createJD: "canCreateJD",
   createTN: "canTraining",
   viewTP: "canViewTP",
+  adminJD: "canAdminJD",
+  adminTP: "canAdminTP",
   manageStructure: "canManageStructure",
   manageUsers: "canManageUsers",
   delete: "canDelete",
 };
+
 
 export function RequireAuth({
   children, requireRole, requireCap,
