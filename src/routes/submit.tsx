@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2, Upload, Wand2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Plus, Trash2, Upload, Wand2 } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useScopes } from "@/hooks/use-scopes";
@@ -33,7 +33,6 @@ export const Route = createFileRoute("/submit")({
   component: () => (<RequireAuth requireCap="createJD"><SubmitPage /></RequireAuth>),
 });
 
-type Lang = "ar" | "en";
 const NEW_POSITION = "__NEW__";
 const isReal = (k: string) => !!k && k !== NA_KEY;
 
