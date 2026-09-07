@@ -447,11 +447,12 @@ function ResultPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const t = useT(T);
   const map: Record<string, { label: string; cls: string }> = {
-    pending: { label: "في الانتظار", cls: "bg-muted text-muted-foreground" },
-    processing: { label: "جاري التحليل", cls: "bg-primary/10 text-primary" },
-    completed: { label: "مكتمل", cls: "bg-success/10 text-success" },
-    error: { label: "خطأ", cls: "bg-destructive/10 text-destructive" },
+    pending: { label: t.statusPending, cls: "bg-muted text-muted-foreground" },
+    processing: { label: t.statusProcessing, cls: "bg-primary/10 text-primary" },
+    completed: { label: t.statusCompleted, cls: "bg-success/10 text-success" },
+    error: { label: t.statusError, cls: "bg-destructive/10 text-destructive" },
   };
   const s = map[status] || map.pending;
   return <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${s.cls}`}>{s.label}</span>;
@@ -459,13 +460,14 @@ function StatusBadge({ status }: { status: string }) {
 
 // ============== JD Editor ==============
 function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void }) {
+  const t = useT(T);
   const set = <K extends keyof JDData>(k: K, v: JDData[K]) => onChange({ ...jd, [k]: v });
   const linesToArr = (s: string) => s.split("\n").map(x => x.trim()).filter(Boolean);
   const arrToLines = (a: string[] | undefined) => (a || []).join("\n");
 
   return (
     <Card className="bg-card p-6 shadow-elevated space-y-6">
-      <p className="text-sm text-muted-foreground">عدّل الحقول اللي محتاج تغيرها. الحقول اللي زي القوائم اكتب كل عنصر في سطر منفصل.</p>
+      <p className="text-sm text-muted-foreground">{t.editJDHint}</p>
 
       <div className="grid md:grid-cols-2 gap-4">
         <EF label="Position Title"><Input value={jd.position_title || ""} onChange={e => set("position_title", e.target.value)} /></EF>
@@ -481,7 +483,7 @@ function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void
       </EF>
 
       <div>
-        <h3 className="font-bold mb-3">Key Result Areas</h3>
+        <h3 className="font-bold mb-3">{t.keyResultAreas}</h3>
         <div className="space-y-4">
           {(jd.key_result_areas || []).map((kra, i) => (
             <Card key={i} className="p-4 border-border/60">
@@ -503,14 +505,14 @@ function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void
                   }}
                 ><X className="w-4 h-4" /></Button>
               </div>
-              <EF label="Responsibilities (سطر لكل عنصر)">
+              <EF label={t.responsibilitiesHint}>
                 <Textarea rows={4} value={arrToLines(kra.responsibilities)} onChange={e => {
                   const arr = [...(jd.key_result_areas || [])];
                   arr[i] = { ...arr[i], responsibilities: linesToArr(e.target.value) };
                   set("key_result_areas", arr);
                 }} />
               </EF>
-              <EF label="KRAs (سطر لكل عنصر)">
+              <EF label={t.krasHint}>
                 <Textarea rows={3} value={arrToLines(kra.kras)} onChange={e => {
                   const arr = [...(jd.key_result_areas || [])];
                   arr[i] = { ...arr[i], kras: linesToArr(e.target.value) };
@@ -522,12 +524,12 @@ function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void
           <Button type="button" variant="outline" size="sm" onClick={() => {
             const arr = [...(jd.key_result_areas || []), { area: "New KRA", responsibilities: [], kras: [] }];
             set("key_result_areas", arr);
-          }}>+ إضافة KRA</Button>
+          }}>{t.addKra}</Button>
         </div>
       </div>
 
       <div>
-        <h3 className="font-bold mb-3">Qualifications</h3>
+        <h3 className="font-bold mb-3">{t.qualifications}</h3>
         <div className="grid md:grid-cols-2 gap-4">
           {(["education","experience","computer_skills","language_skills","core_competencies","functional_competencies","leadership_competencies"] as const).map((k) => (
             <EF key={k} label={k.replace(/_/g, " ")}>
@@ -540,7 +542,7 @@ function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void
       </div>
 
       <div>
-        <h3 className="font-bold mb-3">Communication</h3>
+        <h3 className="font-bold mb-3">{t.communication}</h3>
         <div className="grid md:grid-cols-2 gap-4">
           <EF label="Internal Communication"><Textarea rows={3} value={arrToLines(jd.internal_communication)} onChange={e => set("internal_communication", linesToArr(e.target.value))} /></EF>
           <EF label="External Communication"><Textarea rows={3} value={arrToLines(jd.external_communication)} onChange={e => set("external_communication", linesToArr(e.target.value))} /></EF>
