@@ -11,8 +11,16 @@ import { toast } from "sonner";
 import { generateJDDocx, type JDData } from "@/lib/generate-jd-docx";
 
 import { RequireAuth } from "@/components/RequireAuth";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLang, useT } from "@/hooks/use-i18n";
 
 export const Route = createFileRoute("/result/$id")({
+  head: () => ({
+    meta: [
+      { title: "Job Description Result | Nahdet Misr HR" },
+      { name: "description", content: "View, edit, and download the AI-generated job description and analysis." },
+    ],
+  }),
   component: () => (<RequireAuth><ResultPage /></RequireAuth>),
 });
 
