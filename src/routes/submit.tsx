@@ -12,8 +12,10 @@ import {
 import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, Sparkles, Loader2, Info, Languages, Plus, Trash2, Upload, Wand2 } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { useScopes } from "@/hooks/use-scopes";
 import { useStructure, NA_KEY } from "@/hooks/use-structure";
+import { useLang, useT } from "@/hooks/use-i18n";
 
 export const Route = createFileRoute("/submit")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -21,6 +23,12 @@ export const Route = createFileRoute("/submit")({
     sector: typeof s.sector === "string" ? s.sector : "",
     department: typeof s.department === "string" ? s.department : "",
     position: typeof s.position === "string" ? s.position : "",
+  }),
+  head: () => ({
+    meta: [
+      { title: "Submit Job Information | Nahdet Misr HR" },
+      { name: "description", content: "Fill in job details to generate an AI-powered job description." },
+    ],
   }),
   component: () => (<RequireAuth requireCap="createJD"><SubmitPage /></RequireAuth>),
 });
@@ -93,6 +101,24 @@ const T = {
     received: "تم استلام البيانات، جاري التحليل...",
     errSend: "حصلت مشكلة في إرسال البيانات، حاول تاني",
     errRequired: "من فضلك املأ كل الحقول الإجبارية",
+    uploadTitle: "ارفع ملف وخلي الـ AI يملأ الفورم بدالك",
+    uploadHint: "يدعم Excel (.xlsx/.xls/.csv) و Word (.docx) و PDF و نصوص (.txt/.md). راجع البيانات قبل الإرسال.",
+    uploadBtn: "رفع ملف",
+    uploadParsing: "جاري التحليل...",
+    fileTooBig: "الملف أكبر من 15MB",
+    fileEmpty: "الملف فاضي أو غير مدعوم",
+    fileUnsupported: "نوع الملف غير مدعوم",
+    aiParseFailed: "فشل قراءة الملف بالـ AI",
+    aiParseSuccess: "تم استخراج البيانات — راجعها قبل الإرسال",
+    fileReadError: "حصلت مشكلة أثناء قراءة الملف",
+    company: "الشركة *",
+    companyPh: "اختر الشركة",
+    departmentDirect: "القسم / الإدارة (تابعة للقطاع مباشرة)",
+    noDepartments: "لا يوجد إدارات — الوظائف تحت القطاع مباشرة",
+    sectionOptional: "القسم (Section) — اختياري",
+    sectionPh: "اختر القسم (اختياري)",
+    subsectionOptional: "القسم الفرعي (Subsection) — اختياري",
+    subsectionPh: "اختر القسم الفرعي",
   },
   en: {
     backHome: "Back to Home",
@@ -156,6 +182,24 @@ const T = {
     received: "Data received, analyzing...",
     errSend: "Something went wrong, try again",
     errRequired: "Please fill all required fields",
+    uploadTitle: "Upload a file and let AI fill the form for you",
+    uploadHint: "Supports Excel (.xlsx/.xls/.csv), Word (.docx), PDF and text (.txt/.md). Review the data before submitting.",
+    uploadBtn: "Upload file",
+    uploadParsing: "Analyzing...",
+    fileTooBig: "File is larger than 15MB",
+    fileEmpty: "File is empty or unsupported",
+    fileUnsupported: "Unsupported file type",
+    aiParseFailed: "AI failed to read the file",
+    aiParseSuccess: "Data extracted — review before submitting",
+    fileReadError: "Something went wrong while reading the file",
+    company: "Company *",
+    companyPh: "Select company",
+    departmentDirect: "Department (reports directly to sector)",
+    noDepartments: "No departments — positions report directly to sector",
+    sectionOptional: "Section — optional",
+    sectionPh: "Select section (optional)",
+    subsectionOptional: "Subsection — optional",
+    subsectionPh: "Select subsection",
   },
 } as const;
 
@@ -169,9 +213,8 @@ function SubmitPage() {
   const { isAllowed } = useScopes();
   const { companies, positions, tree } = useStructure();
   const [submitting, setSubmitting] = useState(false);
-  const [lang, setLang] = useState<Lang>("ar");
-  const t = T[lang];
-  const dir = lang === "ar" ? "rtl" : "ltr";
+  const { lang: uiLang, dir } = useLang();
+  const t = useT(T);
 
   // Pre-select Nahdet Misr Publishing by default
   const defaultCompanyId = prefill.company_id || "00000000-0000-0000-0000-000000000002";
@@ -289,21 +332,21 @@ function SubmitPage() {
     if (file.type.startsWith("text/") || /\.(txt|md|json)$/.test(name)) {
       return await file.text();
     }
-    throw new Error("نوع الملف غير مدعوم");
+    throw new Error(t.fileUnsupported);
   };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 15 * 1024 * 1024) { toast.error("الملف أكبر من 15MB"); return; }
+    if (file.size > 15 * 1024 * 1024) { toast.error(t.fileTooBig); return; }
     setParsing(true);
     try {
       const text = await extractFileText(file);
-      if (text.trim().length < 20) { toast.error("الملف فاضي أو غير مدعوم"); return; }
+      if (text.trim().length < 20) { toast.error(t.fileEmpty); return; }
 
       const { data, error } = await supabase.functions.invoke("parse-job-doc", { body: { text } });
       if (error || (data as { error?: string })?.error) {
-        toast.error("فشل قراءة الملف بالـ AI"); return;
+        toast.error(t.aiParseFailed); return;
       }
       const d = (data as { data: Record<string, string> }).data || {};
       const title = String(d.job_title || "").trim();
@@ -346,10 +389,10 @@ function SubmitPage() {
           presented_to: r.presented_to || "",
         })));
       }
-      toast.success("تم استخراج البيانات — راجعها قبل الإرسال");
+      toast.success(t.aiParseSuccess);
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "حصلت مشكلة أثناء قراءة الملف");
+      toast.error(err instanceof Error ? err.message : t.fileReadError);
     } finally {
       setParsing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -441,7 +484,7 @@ function SubmitPage() {
     }
   };
 
-  const BackArrow = lang === "ar" ? ArrowRight : ArrowLeft;
+  const BackArrow = uiLang === "ar" ? ArrowRight : ArrowLeft;
 
   return (
     <div className="min-h-screen py-8 md:py-12" dir={dir}>
@@ -452,10 +495,7 @@ function SubmitPage() {
             {t.backHome}
           </Link>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => setLang(lang === "ar" ? "en" : "ar")} className="gap-1.5">
-              <Languages className="w-4 h-4" />
-              {lang === "ar" ? "English" : "العربية"}
-            </Button>
+            <LanguageToggle />
             <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary">
               {t.pastRequests}
             </Link>
@@ -476,15 +516,15 @@ function SubmitPage() {
             <div className="flex items-start gap-2 text-sm">
               <Wand2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div>
-                <div className="font-semibold">ارفع ملف وخلي الـ AI يملأ الفورم بدالك</div>
-                <p className="text-xs text-muted-foreground">يدعم Excel (.xlsx/.xls/.csv) و Word (.docx) و PDF و نصوص (.txt/.md). راجع البيانات قبل الإرسال.</p>
+                <div className="font-semibold">{t.uploadTitle}</div>
+                <p className="text-xs text-muted-foreground">{t.uploadHint}</p>
               </div>
             </div>
             <div>
               <input ref={fileInputRef} type="file" accept=".txt,.md,.csv,.json,.docx,.pdf,.xlsx,.xls,.xlsm" onChange={handleFile} className="hidden" />
               <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={parsing} className="gap-1.5">
                 {parsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {parsing ? "جاري التحليل..." : "رفع ملف"}
+                {parsing ? t.uploadParsing : t.uploadBtn}
               </Button>
             </div>
           </div>
@@ -523,9 +563,9 @@ function SubmitPage() {
 
 
             {/* Company / Sector / Department / Section / Subsection cascading */}
-            <Field label={lang === "ar" ? "الشركة *" : "Company *"} required>
+            <Field label={t.company} required>
               <Select value={companyId} onValueChange={(v) => { setCompanyId(v); setSector(""); setDepartment(""); setSection(""); setSubsection(""); setPosition(""); }}>
-                <SelectTrigger><SelectValue placeholder={lang === "ar" ? "اختر الشركة" : "Select company"} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t.companyPh} /></SelectTrigger>
                 <SelectContent>
                   {childCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
@@ -550,14 +590,14 @@ function SubmitPage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={hasRealDepartments ? t.department : (lang === "ar" ? "القسم / الإدارة (تابعة للقطاع مباشرة)" : "Department (reports directly to sector)")} required={hasRealDepartments}>
+              <Field label={hasRealDepartments ? t.department : t.departmentDirect} required={hasRealDepartments}>
                 <Select
                   value={department}
                   onValueChange={(v) => { setDepartment(v); setSection(""); setSubsection(""); setPosition(""); }}
                   disabled={!sector || !hasRealDepartments}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={hasRealDepartments ? t.departmentPh : (lang === "ar" ? "لا يوجد إدارات — الوظائف تحت القطاع مباشرة" : "No departments")} />
+                    <SelectValue placeholder={hasRealDepartments ? t.departmentPh : t.noDepartments} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
@@ -568,18 +608,18 @@ function SubmitPage() {
 
             {sectionsList.length > 0 && (
               <div className="grid md:grid-cols-2 gap-4">
-                <Field label={lang === "ar" ? "القسم (Section) — اختياري" : "Section — optional"}>
+                <Field label={t.sectionOptional}>
                   <Select value={section} onValueChange={(v) => { setSection(v); setSubsection(""); setPosition(""); }}>
-                    <SelectTrigger><SelectValue placeholder={lang === "ar" ? "اختر القسم (اختياري)" : "Select section (optional)"} /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t.sectionPh} /></SelectTrigger>
                     <SelectContent>
                       {sectionsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </Field>
                 {subsectionsList.length > 0 && (
-                  <Field label={lang === "ar" ? "القسم الفرعي (Subsection) — اختياري" : "Subsection — optional"}>
+                  <Field label={t.subsectionOptional}>
                     <Select value={subsection} onValueChange={(v) => { setSubsection(v); setPosition(""); }} disabled={!section}>
-                      <SelectTrigger><SelectValue placeholder={lang === "ar" ? "اختر القسم الفرعي" : "Select subsection"} /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t.subsectionPh} /></SelectTrigger>
                       <SelectContent>
                         {subsectionsList.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                       </SelectContent>

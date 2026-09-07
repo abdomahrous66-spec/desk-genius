@@ -9,6 +9,8 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/hooks/use-auth";
 import { useScopes } from "@/hooks/use-scopes";
 import { useStructure, NA_KEY, type Tree } from "@/hooks/use-structure";
+import { useLang, useT } from "@/hooks/use-i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export const Route = createFileRoute("/structure")({
   component: () => (<RequireAuth><StructurePage /></RequireAuth>),
@@ -28,16 +30,50 @@ type ApprovedJD = {
 
 const norm = (s: string) => s.toLowerCase().trim();
 const isReal = (k: string) => k && k !== NA_KEY;
-const display = (k: string) => (isReal(k) ? k : "(عام)");
+
+const dict = {
+  en: {
+    home: "Home",
+    subtitle: "Organizational structure — Company → Sector → Department → Section → Position.",
+    searchPlaceholder: "Search...",
+    noCompanies: "You don't have access to any companies.",
+    sectorCount: (n: number) => `${n} sector${n === 1 ? "" : "s"}`,
+    positionCount: (n: number) => `${n} position${n === 1 ? "" : "s"}`,
+    departmentCount: (n: number) => `${n} department${n === 1 ? "" : "s"}`,
+    noData: "No data here.",
+    approvedJD: "Approved JD",
+    viewJD: "View JD",
+    createJD: "Create JD",
+    general: "(General)",
+  },
+  ar: {
+    home: "الرئيسية",
+    subtitle: "الهيكل التنظيمي — شركة → قطاع → إدارة → قسم → وظيفة.",
+    searchPlaceholder: "ابحث...",
+    noCompanies: "مفيش شركات مسموح لك بيها.",
+    sectorCount: (n: number) => `${n} قطاع`,
+    positionCount: (n: number) => `${n} وظيفة`,
+    departmentCount: (n: number) => `${n} إدارة`,
+    noData: "مفيش بيانات هنا.",
+    approvedJD: "JD معتمد",
+    viewJD: "عرض JD",
+    createJD: "إنشاء JD",
+    general: "(عام)",
+  },
+};
 
 function StructurePage() {
   const navigate = useNavigate();
   const auth = useAuth();
+  const { dir } = useLang();
+  const t = useT(dict);
   const { isAllowed, loading: scopesLoading, scopes, isRestricted } = useScopes();
   const { companies, tree, loading: structLoading } = useStructure();
   const [query, setQuery] = useState("");
   const [openKeys, setOpenKeys] = useState<Record<string, boolean>>({});
   const [approved, setApproved] = useState<ApprovedJD[]>([]);
+
+  const display = (k: string) => (isReal(k) ? k : t.general);
 
   useEffect(() => {
     (async () => {
@@ -99,31 +135,32 @@ function StructurePage() {
   };
 
   return (
-    <div className="min-h-screen py-8 md:py-12" dir="rtl">
+    <div className="min-h-screen py-8 md:py-12" dir={dir}>
       <div className="container mx-auto px-4 max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
           <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
-            <ArrowRight className="w-4 h-4" /> الرئيسية
+            <ArrowRight className="w-4 h-4" /> {t.home}
           </Link>
+          <LanguageToggle />
         </div>
 
         <div className="mb-6">
           <h1 className="text-3xl md:text-4xl font-bold mb-2 inline-flex items-center gap-3">
             <Layers className="w-8 h-8 text-primary" /> {GROUP_NAME}
           </h1>
-          <p className="text-muted-foreground">الهيكل التنظيمي — شركة → قطاع → إدارة → قسم → وظيفة.</p>
+          <p className="text-muted-foreground">{t.subtitle}</p>
         </div>
 
         <Card className="p-3 mb-6">
           <div className="relative">
             <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحث..." className="pr-9" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.searchPlaceholder} className="pr-9" />
           </div>
         </Card>
 
         <div className="space-y-4">
           {visibleCompanies.length === 0 ? (
-            <Card className="p-8 text-center text-muted-foreground">مفيش شركات مسموح لك بيها.</Card>
+            <Card className="p-8 text-center text-muted-foreground">{t.noCompanies}</Card>
           ) : visibleCompanies.map(c => {
             const compTree = tree[c.id] ?? {};
             const sectors = Object.keys(compTree)
@@ -146,7 +183,7 @@ function StructurePage() {
                     <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center"><Building2 className="w-6 h-6 text-primary" /></div>
                     <div>
                       <div className="font-bold text-xl">{c.name}</div>
-                      <div className="text-xs text-muted-foreground">{Object.keys(compTree).length} قطاع · {totalPos} وظيفة</div>
+                      <div className="text-xs text-muted-foreground">{t.sectorCount(Object.keys(compTree).length)} · {t.positionCount(totalPos)}</div>
                     </div>
                   </div>
                   {cOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -155,7 +192,7 @@ function StructurePage() {
                 {cOpen && (
                   <div className="border-t border-border/60 p-3 space-y-2 bg-background/40">
                     {sectors.length === 0 ? (
-                      <div className="p-6 text-center text-sm text-muted-foreground">مفيش بيانات هنا.</div>
+                      <div className="p-6 text-center text-sm text-muted-foreground">{t.noData}</div>
                     ) : sectors.map(s => (
                       <SectorBlock
                         key={s}
@@ -170,6 +207,8 @@ function StructurePage() {
                         canCreateJD={auth.canCreateJD}
                         onView={(id) => navigate({ to: "/result/$id", params: { id } })}
                         q={q}
+                        t={t}
+                        display={display}
                       />
                     ))}
                   </div>
@@ -184,7 +223,7 @@ function StructurePage() {
 }
 
 type SectorTree = Tree[string][string];
-function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApproved, goCreate, canCreateJD, onView, q }: {
+function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApproved, goCreate, canCreateJD, onView, q, t, display }: {
   company: { id: string; name: string };
   sector: string;
   tree: SectorTree;
@@ -196,6 +235,8 @@ function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApp
   canCreateJD: boolean;
   onView: (id: string) => void;
   q: string;
+  t: ReturnType<typeof useT<typeof dict.en>>;
+  display: (k: string) => string;
 }) {
   const key = `c:${company.id}|s:${sector}`;
   const open = isOpen(key);
@@ -207,7 +248,7 @@ function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApp
       <button type="button" onClick={() => toggle(key)} className="w-full p-4 flex items-center justify-between hover:bg-accent/30">
         <div className="text-right">
           <span className="font-bold text-lg">{display(sector)}</span>
-          <span className="text-xs text-muted-foreground mr-2">· {depts.length} إدارة</span>
+          <span className="text-xs text-muted-foreground mr-2">· {t.departmentCount(depts.length)}</span>
         </div>
         {open ? <ChevronDown className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
       </button>
@@ -228,17 +269,17 @@ function SectorBlock({ company, sector, tree, isOpen, toggle, isAllowed, findApp
                           <li key={p.id} className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-accent/10">
                             <span className="text-sm flex items-center gap-2">
                               {p.position_title}
-                              {approvedId && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-success/10 text-success">JD معتمد</span>}
+                              {approvedId && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-success/10 text-success">{t.approvedJD}</span>}
                             </span>
                             <div className="flex items-center gap-1.5">
                               {approvedId && (
                                 <Button size="sm" variant="secondary" onClick={() => onView(approvedId)} className="gap-1.5">
-                                  <FileCheck2 className="w-4 h-4" /> عرض JD
+                                  <FileCheck2 className="w-4 h-4" /> {t.viewJD}
                                 </Button>
                               )}
                               {canCreateJD && (
                                 <Button size="sm" variant="outline" onClick={() => goCreate(company.id, sector, d, p.position_title)} className="gap-1.5">
-                                  <FilePlus2 className="w-4 h-4" /> إنشاء JD
+                                  <FilePlus2 className="w-4 h-4" /> {t.createJD}
                                 </Button>
                               )}
                             </div>
