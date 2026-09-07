@@ -111,12 +111,13 @@
   }
 
   html {
+    direction: ltr;
+  }
+
+  html[dir="rtl"] {
     direction: rtl;
   }
 
-  html[lang="en"] {
-    direction: ltr;
-  }
 
   body {
     background: var(--gradient-subtle);
