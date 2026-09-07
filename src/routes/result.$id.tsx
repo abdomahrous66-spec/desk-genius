@@ -131,6 +131,8 @@ const T = {
 
 function ResultPage() {
   const { id } = Route.useParams();
+  const { dir } = useLang();
+  const t = useT(T);
   const [record, setRecord] = useState<AnalysisRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -154,7 +156,7 @@ function ResultPage() {
       if (!active) return;
       if (error) {
         console.error(error);
-        toast.error("تعذّر تحميل النتيجة");
+        toast.error(t.loadFailed);
         setLoading(false);
         return;
       }
@@ -178,7 +180,7 @@ function ResultPage() {
   const copy = () => {
     if (!record?.analysis_result) return;
     navigator.clipboard.writeText(record.analysis_result);
-    toast.success("تم نسخ التحليل");
+    toast.success(t.copiedAnalysis);
   };
 
   const download = () => {
@@ -201,28 +203,28 @@ function ResultPage() {
 
   const downloadJD = async (target: "ar" | "en") => {
     if (!record?.jd_data) {
-      toast.error("بيانات الـ Job Description لسه مش جاهزة");
+      toast.error(t.jdNotReady);
       return;
     }
     setDownloadingLang(target);
     try {
       let jdToUse: JDData = record.jd_data;
       if (jdLanguage(record.jd_data) !== target) {
-        toast.message(target === "ar" ? "جاري الترجمة للعربية..." : "Translating to English...");
+        toast.message(target === "ar" ? t.translatingAr : t.translatingEn);
         const { data, error } = await supabase.functions.invoke("translate-jd", {
           body: { jd: record.jd_data, target },
         });
         if (error || (data as { error?: string })?.error) {
-          toast.error("فشلت الترجمة، حاول تاني");
+          toast.error(t.translateFailed);
           return;
         }
         jdToUse = (data as { jd: JDData }).jd;
       }
       await generateJDDocx(jdToUse);
-      toast.success(target === "ar" ? "تم تحميل النسخة العربية" : "English version downloaded");
+      toast.success(target === "ar" ? t.downloadedAr : t.downloadedEn);
     } catch (e) {
       console.error(e);
-      toast.error("حصلت مشكلة في توليد الملف");
+      toast.error(t.genFileError);
     } finally {
       setDownloadingLang(null);
     }
@@ -249,13 +251,13 @@ function ResultPage() {
     setSaving(false);
     if (error) {
       console.error(error);
-      toast.error("فشل حفظ التعديلات");
+      toast.error(t.saveFailed);
       return;
     }
     setRecord({ ...record, jd_data: editJD });
     setEditing(false);
     setEditJD(null);
-    toast.success("تم حفظ التعديلات");
+    toast.success(t.savedChanges);
   };
 
   const startEditAnalysis = () => {
@@ -279,12 +281,12 @@ function ResultPage() {
     setSavingAnalysis(false);
     if (error) {
       console.error(error);
-      toast.error("فشل حفظ التعديلات");
+      toast.error(t.saveFailed);
       return;
     }
     setRecord({ ...record, analysis_result: editAnalysis });
     setEditingAnalysis(false);
-    toast.success("تم حفظ التحليل");
+    toast.success(t.savedAnalysis);
   };
 
   if (loading) {
