@@ -46,7 +46,7 @@ export function useLang() {
 }
 
 /** Local per-page dictionary helper: `const t = useT({ en: {...}, ar: {...} })`. */
-export function useT<T extends Record<string, string>>(dict: { en: T; ar: T }): T {
+export function useT<T extends Record<string, unknown>>(dict: { en: T; ar: Record<keyof T, unknown> }): T {
   const { lang } = useLang();
-  return lang === "ar" ? dict.ar : dict.en;
+  return (lang === "ar" ? (dict.ar as T) : dict.en);
 }

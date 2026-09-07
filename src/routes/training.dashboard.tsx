@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useLang, useT } from "@/hooks/use-i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -17,10 +19,10 @@ import type { TrainingNeed } from "@/lib/training";
 export const Route = createFileRoute("/training/dashboard")({
   head: () => ({
     meta: [
-      { title: "لوحة مؤشرات التدريب · نهضة مصر" },
-      { name: "description", content: "مؤشرات خطة التدريب: التكلفة، الأيام، الساعات، الحضور والتوزيع حسب القطاع." },
-      { property: "og:title", content: "لوحة مؤشرات التدريب · نهضة مصر" },
-      { property: "og:description", content: "مؤشرات خطة التدريب: التكلفة، الأيام، الساعات، الحضور والتوزيع حسب القطاع." },
+      { title: "Training Dashboard · Nahdet Misr" },
+      { name: "description", content: "Training plan indicators: cost, days, hours, attendance, and distribution by sector." },
+      { property: "og:title", content: "Training Dashboard · Nahdet Misr" },
+      { property: "og:description", content: "Training plan indicators: cost, days, hours, attendance, and distribution by sector." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -32,7 +34,32 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2, 210 90% 60%))", "hsl(
 const num = (v: unknown) => (typeof v === "number" && isFinite(v) ? v : 0);
 const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 
+const dict = {
+  en: {
+    title: "Training Dashboard",
+    downloadReport: "Download Report",
+    home: "Home",
+    company: "Company",
+    sector: "Sector",
+    year: "Implementation Year",
+    all: "All",
+    notSpecified: "Not specified",
+  },
+  ar: {
+    title: "لوحة مؤشرات التدريب",
+    downloadReport: "تنزيل التقرير",
+    home: "الرئيسية",
+    company: "الشركة",
+    sector: "القطاع",
+    year: "سنة التنفيذ",
+    all: "الكل",
+    notSpecified: "غير محدد",
+  },
+};
+
 function DashboardPage() {
+  const { dir } = useLang();
+  const t = useT(dict);
   const { companies } = useStructure();
   const [rows, setRows] = useState<TrainingNeed[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,10 +109,10 @@ function DashboardPage() {
     };
   }, [data]);
 
-  const bySector = useMemo(() => groupSum(data, r => r.sector || "غير محدد"), [data]);
-  const byType = useMemo(() => groupCount(data, r => r.training_type || "غير محدد"), [data]);
-  const byQuarter = useMemo(() => groupSum(data, r => r.implementation_quarter || r.recommended_quarter_1 || "غير محدد"), [data]);
-  const byDelivery = useMemo(() => groupCount(data, r => r.delivery_type || "غير محدد"), [data]);
+  const bySector = useMemo(() => groupSum(data, r => r.sector || t.notSpecified), [data, t.notSpecified]);
+  const byType = useMemo(() => groupCount(data, r => r.training_type || t.notSpecified), [data, t.notSpecified]);
+  const byQuarter = useMemo(() => groupSum(data, r => r.implementation_quarter || r.recommended_quarter_1 || t.notSpecified), [data, t.notSpecified]);
+  const byDelivery = useMemo(() => groupCount(data, r => r.delivery_type || t.notSpecified), [data, t.notSpecified]);
 
   const exportExcel = () => {
     const wb = XLSX.utils.book_new();
@@ -120,22 +147,23 @@ function DashboardPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="min-h-screen bg-muted/30" dir="rtl">
+    <div className="min-h-screen bg-muted/30" dir={dir}>
       <header className="bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="font-bold">لوحة مؤشرات التدريب</div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="secondary" onClick={exportExcel}><Download className="w-4 h-4 ml-1" /> تنزيل التقرير</Button>
-            <Link to="/"><Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/15"><ArrowRight className="w-4 h-4 ml-1" /> الرئيسية</Button></Link>
+          <div className="font-bold">{t.title}</div>
+          <div className="flex gap-2 items-center">
+            <LanguageToggle className="text-primary-foreground hover:bg-white/15" />
+            <Button size="sm" variant="secondary" onClick={exportExcel}><Download className="w-4 h-4 ml-1" /> {t.downloadReport}</Button>
+            <Link to="/"><Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/15"><ArrowRight className="w-4 h-4 ml-1" /> {t.home}</Button></Link>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-6 space-y-6">
         <Card className="p-4 grid md:grid-cols-3 gap-4">
-          <Filter label="الشركة" value={company} onChange={setCompany} options={companies.map(c => ({ v: c.id, l: c.name }))} />
-          <Filter label="القطاع" value={sector} onChange={setSector} options={sectors.map(s => ({ v: s, l: s }))} />
-          <Filter label="سنة التنفيذ" value={year} onChange={setYear} options={years.map(y => ({ v: String(y), l: String(y) }))} />
+          <Filter label={t.company} allLabel={t.all} value={company} onChange={setCompany} options={companies.map(c => ({ v: c.id, l: c.name }))} />
+          <Filter label={t.sector} allLabel={t.all} value={sector} onChange={setSector} options={sectors.map(s => ({ v: s, l: s }))} />
+          <Filter label={t.year} allLabel={t.all} value={year} onChange={setYear} options={years.map(y => ({ v: String(y), l: String(y) }))} />
         </Card>
 
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -258,12 +286,12 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Filter({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { v: string; l: string }[] }) {
+function Filter({ label, allLabel, value, onChange, options }: { label: string; allLabel: string; value: string; onChange: (v: string) => void; options: { v: string; l: string }[] }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
       <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={value} onChange={e => onChange(e.target.value)}>
-        <option value="">الكل</option>
+        <option value="">{allLabel}</option>
         {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
       </select>
     </div>

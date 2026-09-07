@@ -11,8 +11,16 @@ import { toast } from "sonner";
 import { generateJDDocx, type JDData } from "@/lib/generate-jd-docx";
 
 import { RequireAuth } from "@/components/RequireAuth";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLang, useT } from "@/hooks/use-i18n";
 
 export const Route = createFileRoute("/result/$id")({
+  head: () => ({
+    meta: [
+      { title: "Job Description Result | Nahdet Misr HR" },
+      { name: "description", content: "View, edit, and download the AI-generated job description and analysis." },
+    ],
+  }),
   component: () => (<RequireAuth><ResultPage /></RequireAuth>),
 });
 
@@ -27,8 +35,104 @@ type AnalysisRecord = {
   created_at: string;
 };
 
+
+const T = {
+  ar: {
+    home: "الرئيسية",
+    allRequests: "كل الطلبات",
+    notFound: "لم يتم العثور على الطلب",
+    backHome: "الرجوع للرئيسية",
+    department: "القسم",
+    manager: "المدير",
+    analyzing: "الذكاء الاصطناعي بيحلل البيانات...",
+    analyzingHint: "عادة بياخد من 10 لـ 30 ثانية. الصفحة هتتحدث تلقائياً.",
+    analysisError: "حصلت مشكلة في التحليل",
+    tryAgainLater: "حاول تاني بعد شوية",
+    copyAnalysis: "نسخ التحليل",
+    downloadAnalysisMd: "تحميل التحليل (MD)",
+    editAnalysis: "تعديل التحليل",
+    editJD: "تعديل الـ JD",
+    downloadJDAr: "تحميل JD (عربي)",
+    downloadJDEn: "Download JD (English)",
+    cancel: "إلغاء",
+    saveAnalysis: "حفظ التحليل",
+    saveChanges: "حفظ التعديلات",
+    editHint: "عدّل النص (Markdown) — استخدم # للعناوين و - للقوائم.",
+    editJDHint: "عدّل الحقول اللي محتاج تغيرها. الحقول اللي زي القوائم اكتب كل عنصر في سطر منفصل.",
+    keyResultAreas: "Key Result Areas",
+    responsibilitiesHint: "Responsibilities (سطر لكل عنصر)",
+    krasHint: "KRAs (سطر لكل عنصر)",
+    addKra: "+ إضافة KRA",
+    qualifications: "Qualifications",
+    communication: "Communication",
+    loadFailed: "تعذّر تحميل النتيجة",
+    copiedAnalysis: "تم نسخ التحليل",
+    jdNotReady: "بيانات الـ Job Description لسه مش جاهزة",
+    translatingAr: "جاري الترجمة للعربية...",
+    translatingEn: "Translating to English...",
+    translateFailed: "فشلت الترجمة، حاول تاني",
+    downloadedAr: "تم تحميل النسخة العربية",
+    downloadedEn: "English version downloaded",
+    genFileError: "حصلت مشكلة في توليد الملف",
+    saveFailed: "فشل حفظ التعديلات",
+    savedChanges: "تم حفظ التعديلات",
+    savedAnalysis: "تم حفظ التحليل",
+    statusPending: "في الانتظار",
+    statusProcessing: "جاري التحليل",
+    statusCompleted: "مكتمل",
+    statusError: "خطأ",
+  },
+  en: {
+    home: "Home",
+    allRequests: "All Requests",
+    notFound: "Request not found",
+    backHome: "Back to Home",
+    department: "Department",
+    manager: "Manager",
+    analyzing: "AI is analyzing the data...",
+    analyzingHint: "This usually takes 10 to 30 seconds. The page will update automatically.",
+    analysisError: "An error occurred during analysis",
+    tryAgainLater: "Please try again shortly",
+    copyAnalysis: "Copy Analysis",
+    downloadAnalysisMd: "Download Analysis (MD)",
+    editAnalysis: "Edit Analysis",
+    editJD: "Edit JD",
+    downloadJDAr: "Download JD (Arabic)",
+    downloadJDEn: "Download JD (English)",
+    cancel: "Cancel",
+    saveAnalysis: "Save Analysis",
+    saveChanges: "Save Changes",
+    editHint: "Edit the text (Markdown) — use # for headings and - for lists.",
+    editJDHint: "Edit the fields you need to change. For list-like fields, put each item on its own line.",
+    keyResultAreas: "Key Result Areas",
+    responsibilitiesHint: "Responsibilities (one per line)",
+    krasHint: "KRAs (one per line)",
+    addKra: "+ Add KRA",
+    qualifications: "Qualifications",
+    communication: "Communication",
+    loadFailed: "Failed to load the result",
+    copiedAnalysis: "Analysis copied",
+    jdNotReady: "Job Description data is not ready yet",
+    translatingAr: "Translating to Arabic...",
+    translatingEn: "Translating to English...",
+    translateFailed: "Translation failed, please try again",
+    downloadedAr: "Arabic version downloaded",
+    downloadedEn: "English version downloaded",
+    genFileError: "Something went wrong generating the file",
+    saveFailed: "Failed to save changes",
+    savedChanges: "Changes saved",
+    savedAnalysis: "Analysis saved",
+    statusPending: "Pending",
+    statusProcessing: "Analyzing",
+    statusCompleted: "Completed",
+    statusError: "Error",
+  },
+} as const;
+
 function ResultPage() {
   const { id } = Route.useParams();
+  const { dir } = useLang();
+  const t = useT(T);
   const [record, setRecord] = useState<AnalysisRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -52,7 +156,7 @@ function ResultPage() {
       if (!active) return;
       if (error) {
         console.error(error);
-        toast.error("تعذّر تحميل النتيجة");
+        toast.error(t.loadFailed);
         setLoading(false);
         return;
       }
@@ -76,7 +180,7 @@ function ResultPage() {
   const copy = () => {
     if (!record?.analysis_result) return;
     navigator.clipboard.writeText(record.analysis_result);
-    toast.success("تم نسخ التحليل");
+    toast.success(t.copiedAnalysis);
   };
 
   const download = () => {
@@ -99,28 +203,28 @@ function ResultPage() {
 
   const downloadJD = async (target: "ar" | "en") => {
     if (!record?.jd_data) {
-      toast.error("بيانات الـ Job Description لسه مش جاهزة");
+      toast.error(t.jdNotReady);
       return;
     }
     setDownloadingLang(target);
     try {
       let jdToUse: JDData = record.jd_data;
       if (jdLanguage(record.jd_data) !== target) {
-        toast.message(target === "ar" ? "جاري الترجمة للعربية..." : "Translating to English...");
+        toast.message(target === "ar" ? t.translatingAr : t.translatingEn);
         const { data, error } = await supabase.functions.invoke("translate-jd", {
           body: { jd: record.jd_data, target },
         });
         if (error || (data as { error?: string })?.error) {
-          toast.error("فشلت الترجمة، حاول تاني");
+          toast.error(t.translateFailed);
           return;
         }
         jdToUse = (data as { jd: JDData }).jd;
       }
       await generateJDDocx(jdToUse);
-      toast.success(target === "ar" ? "تم تحميل النسخة العربية" : "English version downloaded");
+      toast.success(target === "ar" ? t.downloadedAr : t.downloadedEn);
     } catch (e) {
       console.error(e);
-      toast.error("حصلت مشكلة في توليد الملف");
+      toast.error(t.genFileError);
     } finally {
       setDownloadingLang(null);
     }
@@ -147,13 +251,13 @@ function ResultPage() {
     setSaving(false);
     if (error) {
       console.error(error);
-      toast.error("فشل حفظ التعديلات");
+      toast.error(t.saveFailed);
       return;
     }
     setRecord({ ...record, jd_data: editJD });
     setEditing(false);
     setEditJD(null);
-    toast.success("تم حفظ التعديلات");
+    toast.success(t.savedChanges);
   };
 
   const startEditAnalysis = () => {
@@ -177,12 +281,12 @@ function ResultPage() {
     setSavingAnalysis(false);
     if (error) {
       console.error(error);
-      toast.error("فشل حفظ التعديلات");
+      toast.error(t.saveFailed);
       return;
     }
     setRecord({ ...record, analysis_result: editAnalysis });
     setEditingAnalysis(false);
-    toast.success("تم حفظ التحليل");
+    toast.success(t.savedAnalysis);
   };
 
   if (loading) {
@@ -195,12 +299,12 @@ function ResultPage() {
 
   if (!record) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4" dir={dir}>
         <Card className="p-8 text-center max-w-md">
           <AlertCircle className="w-12 h-12 mx-auto text-destructive mb-3" />
-          <h2 className="text-xl font-bold mb-2">لم يتم العثور على الطلب</h2>
+          <h2 className="text-xl font-bold mb-2">{t.notFound}</h2>
           <Link to="/">
-            <Button>الرجوع للرئيسية</Button>
+            <Button>{t.backHome}</Button>
           </Link>
         </Card>
       </div>
@@ -211,16 +315,19 @@ function ResultPage() {
   const isError = record.status === "error";
 
   return (
-    <div className="min-h-screen py-8 md:py-12">
+    <div className="min-h-screen py-8 md:py-12" dir={dir}>
       <div className="container mx-auto px-4 max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between gap-3">
           <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
             <ArrowRight className="w-4 h-4" />
-            الرئيسية
+            {t.home}
           </Link>
-          <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary">
-            كل الطلبات
-          </Link>
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary">
+              {t.allRequests}
+            </Link>
+          </div>
         </div>
 
         <Card className="bg-gradient-card p-6 md:p-8 shadow-elevated mb-6">
@@ -228,8 +335,8 @@ function ResultPage() {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold mb-1">{record.job_title}</h1>
               <div className="text-sm text-muted-foreground space-y-0.5">
-                {record.department && <p>القسم: {record.department}</p>}
-                {record.manager_name && <p>المدير: {record.manager_name}</p>}
+                {record.department && <p>{t.department}: {record.department}</p>}
+                {record.manager_name && <p>{t.manager}: {record.manager_name}</p>}
               </div>
             </div>
             <StatusBadge status={record.status} />
@@ -241,8 +348,8 @@ function ResultPage() {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-8 h-8 text-primary animate-pulse" />
             </div>
-            <h2 className="text-xl font-bold mb-2">الذكاء الاصطناعي بيحلل البيانات...</h2>
-            <p className="text-muted-foreground mb-6">عادة بياخد من 10 لـ 30 ثانية. الصفحة هتتحدث تلقائياً.</p>
+            <h2 className="text-xl font-bold mb-2">{t.analyzing}</h2>
+            <p className="text-muted-foreground mb-6">{t.analyzingHint}</p>
             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
           </Card>
         )}
@@ -252,8 +359,8 @@ function ResultPage() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-bold text-destructive mb-1">حصلت مشكلة في التحليل</h3>
-                <p className="text-sm text-muted-foreground">{record.analysis_result || "حاول تاني بعد شوية"}</p>
+                <h3 className="font-bold text-destructive mb-1">{t.analysisError}</h3>
+                <p className="text-sm text-muted-foreground">{record.analysis_result || t.tryAgainLater}</p>
               </div>
             </div>
           </Card>
@@ -266,47 +373,47 @@ function ResultPage() {
                 <>
                   <Button onClick={copy} variant="outline" size="sm">
                     <Copy className="w-4 h-4 ml-1.5" />
-                    نسخ التحليل
+                    {t.copyAnalysis}
                   </Button>
                   <Button onClick={download} variant="outline" size="sm">
                     <Download className="w-4 h-4 ml-1.5" />
-                    تحميل التحليل (MD)
+                    {t.downloadAnalysisMd}
                   </Button>
                   <Button onClick={startEditAnalysis} variant="outline" size="sm">
                     <Pencil className="w-4 h-4 ml-1.5" />
-                    تعديل التحليل
+                    {t.editAnalysis}
                   </Button>
                   <Button onClick={startEdit} variant="outline" size="sm" disabled={!record.jd_data}>
                     <Pencil className="w-4 h-4 ml-1.5" />
-                    تعديل الـ JD
+                    {t.editJD}
                   </Button>
                   <Button onClick={() => downloadJD("ar")} size="sm" className="bg-primary text-primary-foreground" disabled={!record.jd_data || downloadingLang !== null}>
                     {downloadingLang === "ar" ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Languages className="w-4 h-4 ml-1.5" />}
-                    تحميل JD (عربي)
+                    {t.downloadJDAr}
                   </Button>
                   <Button onClick={() => downloadJD("en")} size="sm" variant="secondary" disabled={!record.jd_data || downloadingLang !== null}>
                     {downloadingLang === "en" ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <FileText className="w-4 h-4 ml-1.5" />}
-                    Download JD (English)
+                    {t.downloadJDEn}
                   </Button>
                 </>
               ) : editingAnalysis ? (
                 <>
                   <Button onClick={cancelEditAnalysis} variant="outline" size="sm" disabled={savingAnalysis}>
-                    <X className="w-4 h-4 ml-1.5" /> إلغاء
+                    <X className="w-4 h-4 ml-1.5" /> {t.cancel}
                   </Button>
                   <Button onClick={saveEditAnalysis} size="sm" className="bg-primary text-primary-foreground" disabled={savingAnalysis}>
                     {savingAnalysis ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Save className="w-4 h-4 ml-1.5" />}
-                    حفظ التحليل
+                    {t.saveAnalysis}
                   </Button>
                 </>
               ) : (
                 <>
                   <Button onClick={cancelEdit} variant="outline" size="sm" disabled={saving}>
-                    <X className="w-4 h-4 ml-1.5" /> إلغاء
+                    <X className="w-4 h-4 ml-1.5" /> {t.cancel}
                   </Button>
                   <Button onClick={saveEdit} size="sm" className="bg-primary text-primary-foreground" disabled={saving}>
                     {saving ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Save className="w-4 h-4 ml-1.5" />}
-                    حفظ التعديلات
+                    {t.saveChanges}
                   </Button>
                 </>
               )}
@@ -316,7 +423,7 @@ function ResultPage() {
               <JDEditor jd={editJD} onChange={setEditJD} />
             ) : editingAnalysis ? (
               <Card className="bg-card p-4 md:p-6 shadow-elevated">
-                <p className="text-sm text-muted-foreground mb-3">عدّل النص (Markdown) — استخدم # للعناوين و - للقوائم.</p>
+                <p className="text-sm text-muted-foreground mb-3">{t.editHint}</p>
                 <Textarea
                   value={editAnalysis}
                   onChange={(e) => setEditAnalysis(e.target.value)}
@@ -340,11 +447,12 @@ function ResultPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const t = useT(T);
   const map: Record<string, { label: string; cls: string }> = {
-    pending: { label: "في الانتظار", cls: "bg-muted text-muted-foreground" },
-    processing: { label: "جاري التحليل", cls: "bg-primary/10 text-primary" },
-    completed: { label: "مكتمل", cls: "bg-success/10 text-success" },
-    error: { label: "خطأ", cls: "bg-destructive/10 text-destructive" },
+    pending: { label: t.statusPending, cls: "bg-muted text-muted-foreground" },
+    processing: { label: t.statusProcessing, cls: "bg-primary/10 text-primary" },
+    completed: { label: t.statusCompleted, cls: "bg-success/10 text-success" },
+    error: { label: t.statusError, cls: "bg-destructive/10 text-destructive" },
   };
   const s = map[status] || map.pending;
   return <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${s.cls}`}>{s.label}</span>;
@@ -352,13 +460,14 @@ function StatusBadge({ status }: { status: string }) {
 
 // ============== JD Editor ==============
 function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void }) {
+  const t = useT(T);
   const set = <K extends keyof JDData>(k: K, v: JDData[K]) => onChange({ ...jd, [k]: v });
   const linesToArr = (s: string) => s.split("\n").map(x => x.trim()).filter(Boolean);
   const arrToLines = (a: string[] | undefined) => (a || []).join("\n");
 
   return (
     <Card className="bg-card p-6 shadow-elevated space-y-6">
-      <p className="text-sm text-muted-foreground">عدّل الحقول اللي محتاج تغيرها. الحقول اللي زي القوائم اكتب كل عنصر في سطر منفصل.</p>
+      <p className="text-sm text-muted-foreground">{t.editJDHint}</p>
 
       <div className="grid md:grid-cols-2 gap-4">
         <EF label="Position Title"><Input value={jd.position_title || ""} onChange={e => set("position_title", e.target.value)} /></EF>
@@ -374,7 +483,7 @@ function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void
       </EF>
 
       <div>
-        <h3 className="font-bold mb-3">Key Result Areas</h3>
+        <h3 className="font-bold mb-3">{t.keyResultAreas}</h3>
         <div className="space-y-4">
           {(jd.key_result_areas || []).map((kra, i) => (
             <Card key={i} className="p-4 border-border/60">
@@ -396,14 +505,14 @@ function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void
                   }}
                 ><X className="w-4 h-4" /></Button>
               </div>
-              <EF label="Responsibilities (سطر لكل عنصر)">
+              <EF label={t.responsibilitiesHint}>
                 <Textarea rows={4} value={arrToLines(kra.responsibilities)} onChange={e => {
                   const arr = [...(jd.key_result_areas || [])];
                   arr[i] = { ...arr[i], responsibilities: linesToArr(e.target.value) };
                   set("key_result_areas", arr);
                 }} />
               </EF>
-              <EF label="KRAs (سطر لكل عنصر)">
+              <EF label={t.krasHint}>
                 <Textarea rows={3} value={arrToLines(kra.kras)} onChange={e => {
                   const arr = [...(jd.key_result_areas || [])];
                   arr[i] = { ...arr[i], kras: linesToArr(e.target.value) };
@@ -415,12 +524,12 @@ function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void
           <Button type="button" variant="outline" size="sm" onClick={() => {
             const arr = [...(jd.key_result_areas || []), { area: "New KRA", responsibilities: [], kras: [] }];
             set("key_result_areas", arr);
-          }}>+ إضافة KRA</Button>
+          }}>{t.addKra}</Button>
         </div>
       </div>
 
       <div>
-        <h3 className="font-bold mb-3">Qualifications</h3>
+        <h3 className="font-bold mb-3">{t.qualifications}</h3>
         <div className="grid md:grid-cols-2 gap-4">
           {(["education","experience","computer_skills","language_skills","core_competencies","functional_competencies","leadership_competencies"] as const).map((k) => (
             <EF key={k} label={k.replace(/_/g, " ")}>
@@ -433,7 +542,7 @@ function JDEditor({ jd, onChange }: { jd: JDData; onChange: (jd: JDData) => void
       </div>
 
       <div>
-        <h3 className="font-bold mb-3">Communication</h3>
+        <h3 className="font-bold mb-3">{t.communication}</h3>
         <div className="grid md:grid-cols-2 gap-4">
           <EF label="Internal Communication"><Textarea rows={3} value={arrToLines(jd.internal_communication)} onChange={e => set("internal_communication", linesToArr(e.target.value))} /></EF>
           <EF label="External Communication"><Textarea rows={3} value={arrToLines(jd.external_communication)} onChange={e => set("external_communication", linesToArr(e.target.value))} /></EF>

@@ -11,9 +11,17 @@ import { toast } from "sonner";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/hooks/use-auth";
 import { useStructure, type Position } from "@/hooks/use-structure";
+import { useLang, useT } from "@/hooks/use-i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export const Route = createFileRoute("/admin/structure")({
   component: () => (<RequireAuth requireCap="manageStructure"><AdminStructurePage /></RequireAuth>),
+  head: () => ({
+    meta: [
+      { title: "Manage Organizational Structure" },
+      { name: "description", content: "Create companies, import structure via Excel, and manage positions." },
+    ],
+  }),
 });
 
 type Row = {
@@ -27,8 +35,127 @@ type Row = {
   job_code?: string;
 };
 
+const dict = {
+  en: {
+    home: "Home",
+    adminOnly: "This page is for admins only",
+    title: "Manage Organizational Structure",
+    subtitle: "Create companies, upload an Excel sheet to auto-update the structure, or add/remove positions manually.",
+    unknownError: "Unknown error",
+    failedAddCompany: "Failed to add company",
+    companyAdded: "Company added",
+    failedUpdateLogo: "Failed to update logo",
+    logoUpdated: "Logo updated",
+    confirmDeleteCompanyWithPositions: "This company has positions — they will all be deleted. Are you sure?",
+    confirmDeleteCompany: "Delete this company permanently?",
+    failedDeletePositions: "Failed to delete positions",
+    failedDelete: "Failed to delete",
+    deleted: "Deleted",
+    companyAndTitleRequired: "Company and position title are required",
+    failedAdd: "Failed to add",
+    positionAdded: "Position added",
+    confirmDelete: "Are you sure you want to delete?",
+    templateDownloaded: "Template downloaded",
+    reportDownloaded: "Report downloaded",
+    jobCountHeader: "Job Count",
+    selectCompanyFirst: "Select a company first",
+    noJobTitleColumn: "no job title column",
+    empty: "empty",
+    noPositionsFound: "No positions found. Sheets",
+    failedDeleteExisting: "Failed to delete existing data",
+    failedInsertAtRow: "Failed to insert at row",
+    importedSummary: (mode: "replace" | "append", count: number, sheets: number) =>
+      `${mode === "replace" ? "Replaced" : "Added"} ${count} position(s) from ${sheets} sheet(s)`,
+    failedReadFile: "Failed to read file",
+    companiesSection: "Companies",
+    newCompanyName: "New company name",
+    newCompanyNamePlaceholder: "e.g. Company X",
+    logoUrlLabel: "Company logo URL (optional)",
+    logoUrlPlaceholder: "https://... or /__l5e/assets-v1/...",
+    addCompany: "Add Company",
+    logoUrlInputPlaceholder: "Logo URL",
+    deleteCompanyTitle: "Delete company",
+    noCompaniesYet: "No companies yet.",
+    selectCompany: "Select company",
+    allCompanies: "All companies",
+    importMode: "Import mode",
+    appendMode: "Append to existing",
+    replaceMode: "Replace all",
+    uploadExcel: "Upload Excel Sheet",
+    downloadTemplate: "Download Template",
+    downloadStructureReport: "Download Structure Report",
+    refresh: "Refresh",
+    expectedColumns: "Expected columns: Sector, Department, Section, Position (required), Manager, Job Code. Supports Arabic and English. (Subsection is optional and will be saved if present in the sheet.)",
+    addPositionManually: "Add Position Manually",
+    companyRequired: "Company *",
+    choose: "Choose",
+    positionTitleRequired: "Position Title *",
+    add: "Add",
+    positionsSection: (n: number) => `Positions (${n})`,
+  },
+  ar: {
+    home: "الرئيسية",
+    adminOnly: "الصفحة دي للأدمن فقط",
+    title: "إدارة الهيكل التنظيمي",
+    subtitle: "إنشاء شركات، رفع شيت Excel لتحديث الهيكل تلقائياً، أو إضافة/حذف وظائف يدوياً.",
+    unknownError: "خطأ غير معروف",
+    failedAddCompany: "فشل إضافة الشركة",
+    companyAdded: "تمت إضافة الشركة",
+    failedUpdateLogo: "فشل تحديث الشعار",
+    logoUpdated: "تم تحديث الشعار",
+    confirmDeleteCompanyWithPositions: "الشركة فيها وظائف — هيتم حذفها كلها. متأكد؟",
+    confirmDeleteCompany: "حذف الشركة نهائياً؟",
+    failedDeletePositions: "فشل حذف الوظائف",
+    failedDelete: "فشل الحذف",
+    deleted: "تم الحذف",
+    companyAndTitleRequired: "الشركة + اسم الوظيفة إجباري",
+    failedAdd: "فشل الإضافة",
+    positionAdded: "تمت إضافة الوظيفة",
+    confirmDelete: "متأكد من الحذف؟",
+    templateDownloaded: "تم تنزيل التمبلت",
+    reportDownloaded: "تم تنزيل التقرير",
+    jobCountHeader: "عدد الوظائف",
+    selectCompanyFirst: "اختر الشركة الأول",
+    noJobTitleColumn: "مافيش عمود اسم وظيفة",
+    empty: "فاضي",
+    noPositionsFound: "مالقيتش وظائف. الشيتات",
+    failedDeleteExisting: "فشل حذف الموجود",
+    failedInsertAtRow: "فشل الإدخال عند الصف",
+    importedSummary: (mode: "replace" | "append", count: number, sheets: number) =>
+      `تم ${mode === "replace" ? "استبدال" : "إضافة"} ${count} وظيفة من ${sheets} شيت`,
+    failedReadFile: "فشل قراءة الملف",
+    companiesSection: "الشركات",
+    newCompanyName: "اسم شركة جديدة",
+    newCompanyNamePlaceholder: "مثال: شركة X",
+    logoUrlLabel: "رابط شعار الشركة (اختياري)",
+    logoUrlPlaceholder: "https://... أو /__l5e/assets-v1/...",
+    addCompany: "إضافة شركة",
+    logoUrlInputPlaceholder: "رابط الشعار",
+    deleteCompanyTitle: "حذف الشركة",
+    noCompaniesYet: "مافيش شركات لسه.",
+    selectCompany: "اختر الشركة",
+    allCompanies: "كل الشركات",
+    importMode: "وضع الاستيراد",
+    appendMode: "إضافة على الموجود",
+    replaceMode: "استبدال الكل",
+    uploadExcel: "رفع شيت Excel",
+    downloadTemplate: "تنزيل التمبلت",
+    downloadStructureReport: "تنزيل تقرير الهيكل",
+    refresh: "تحديث",
+    expectedColumns: "الأعمدة المتوقعة: Sector, Department, Section, Position (الإجباري), Manager, Job Code. يدعم العربية والإنجليزية. (Subsection اختياري لو موجود في الشيت هيتحفظ.)",
+    addPositionManually: "إضافة وظيفة يدوياً",
+    companyRequired: "الشركة *",
+    choose: "اختر",
+    positionTitleRequired: "Position Title *",
+    add: "إضافة",
+    positionsSection: (n: number) => `الوظائف (${n})`,
+  },
+};
+
 function AdminStructurePage() {
   const auth = useAuth();
+  const { dir } = useLang();
+  const t = useT(dict);
   const { companies, positions, reload, loading } = useStructure();
   const childCompanies = useMemo(() => companies.filter(c => c.parent_id), [companies]);
   const [companyId, setCompanyId] = useState<string>("");
@@ -60,15 +187,15 @@ function AdminStructurePage() {
   if (!auth.canManageStructure) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <Card className="p-8 text-center max-w-md"><h2 className="font-bold mb-2">الصفحة دي للأدمن فقط</h2><Link to="/"><Button>الرئيسية</Button></Link></Card>
+        <Card className="p-8 text-center max-w-md"><h2 className="font-bold mb-2">{t.adminOnly}</h2><Link to="/"><Button>{t.home}</Button></Link></Card>
       </div>
     );
   }
 
   const errMsg = (e: unknown) => {
     const x = e as { message?: string; hint?: string; code?: string; details?: string } | null;
-    if (!x) return "خطأ غير معروف";
-    return [x.message, x.details, x.hint, x.code].filter(Boolean).join(" — ") || "خطأ غير معروف";
+    if (!x) return t.unknownError;
+    return [x.message, x.details, x.hint, x.code].filter(Boolean).join(" — ") || t.unknownError;
   };
 
   const createCompany = async () => {
@@ -83,8 +210,8 @@ function AdminStructurePage() {
       logo_url: newCompanyLogoUrl.trim() || null,
     }).select();
     setCreatingCompany(false);
-    if (error) { toast.error(`فشل إضافة الشركة: ${errMsg(error)}`); return; }
-    toast.success("تمت إضافة الشركة");
+    if (error) { toast.error(`${t.failedAddCompany}: ${errMsg(error)}`); return; }
+    toast.success(t.companyAdded);
     setNewCompanyName("");
     setNewCompanyLogoUrl("");
     const newId = data?.[0]?.id;
@@ -97,30 +224,30 @@ function AdminStructurePage() {
     const { error } = await (supabase as unknown as { from: (t: string) => { update: (r: unknown) => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
       .from("companies").update({ logo_url: url || null }).eq("id", companyId);
     setUploadingLogoFor(null);
-    if (error) { toast.error(`فشل تحديث الشعار: ${errMsg(error)}`); return; }
-    toast.success("تم تحديث الشعار");
+    if (error) { toast.error(`${t.failedUpdateLogo}: ${errMsg(error)}`); return; }
+    toast.success(t.logoUpdated);
     reload();
   };
 
   const deleteCompany = async (id: string) => {
     const hasPositions = positions.some(p => p.company_id === id);
     if (hasPositions) {
-      if (!confirm("الشركة فيها وظائف — هيتم حذفها كلها. متأكد؟")) return;
+      if (!confirm(t.confirmDeleteCompanyWithPositions)) return;
       const delPos = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
         .from("positions").delete().eq("company_id", id);
-      if (delPos.error) { toast.error(`فشل حذف الوظائف: ${errMsg(delPos.error)}`); return; }
-    } else if (!confirm("حذف الشركة نهائياً؟")) return;
+      if (delPos.error) { toast.error(`${t.failedDeletePositions}: ${errMsg(delPos.error)}`); return; }
+    } else if (!confirm(t.confirmDeleteCompany)) return;
     const { error } = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
       .from("companies").delete().eq("id", id);
-    if (error) { toast.error(`فشل الحذف: ${errMsg(error)}`); return; }
-    toast.success("تم الحذف");
+    if (error) { toast.error(`${t.failedDelete}: ${errMsg(error)}`); return; }
+    toast.success(t.deleted);
     if (companyId === id) setCompanyId("");
     reload();
   };
 
   const addPosition = async () => {
     if (!newRow.company_id || !newRow.position_title) {
-      toast.error("الشركة + اسم الوظيفة إجباري");
+      toast.error(t.companyAndTitleRequired);
       return;
     }
     setBusy(true);
@@ -136,18 +263,18 @@ function AdminStructurePage() {
         job_code: newRow.job_code || null,
       });
     setBusy(false);
-    if (error) { toast.error(`فشل الإضافة: ${errMsg(error)}`); return; }
-    toast.success("تمت إضافة الوظيفة");
+    if (error) { toast.error(`${t.failedAdd}: ${errMsg(error)}`); return; }
+    toast.success(t.positionAdded);
     setNewRow({ ...newRow, position_title: "", manager_position: "", job_code: "" });
     reload();
   };
 
   const deletePosition = async (id: string) => {
-    if (!confirm("متأكد من الحذف؟")) return;
+    if (!confirm(t.confirmDelete)) return;
     const { error } = await (supabase as unknown as { from: (t: string) => { delete: () => { eq: (k: string, v: string) => Promise<{ error: unknown }> } } })
       .from("positions").delete().eq("id", id);
-    if (error) { toast.error(`فشل الحذف: ${errMsg(error)}`); return; }
-    toast.success("تم الحذف");
+    if (error) { toast.error(`${t.failedDelete}: ${errMsg(error)}`); return; }
+    toast.success(t.deleted);
     reload();
   };
   const downloadTemplate = async () => {
@@ -162,7 +289,7 @@ function AdminStructurePage() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Structure");
     XLSX.writeFile(wb, "Structure-Template.xlsx");
-    toast.success("تم تنزيل التمبلت");
+    toast.success(t.templateDownloaded);
   };
 
   const downloadReport = async () => {
@@ -190,21 +317,21 @@ function AdminStructurePage() {
     }
     const summary = [...counts.entries()].map(([k, n]) => {
       const [Company, Sector, Department, Section] = k.split("||");
-      return { Company, Sector, Department, Section, "عدد الوظائف": n };
+      return { Company, Sector, Department, Section, [t.jobCountHeader]: n };
     });
     const ws2 = XLSX.utils.json_to_sheet(summary);
     ws2["!cols"] = [30, 24, 24, 24, 14].map(wch => ({ wch }));
     XLSX.utils.book_append_sheet(wb, ws2, "Structure Summary");
 
     XLSX.writeFile(wb, `Structure-Report-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success("تم تنزيل التقرير");
+    toast.success(t.reportDownloaded);
   };
 
 
   const handleExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!companyId) { toast.error("اختر الشركة الأول"); if (fileRef.current) fileRef.current.value = ""; return; }
+    if (!companyId) { toast.error(t.selectCompanyFirst); if (fileRef.current) fileRef.current.value = ""; return; }
     setBusy(true);
     try {
       const XLSX = await import("xlsx");
@@ -239,7 +366,7 @@ function AdminStructurePage() {
         const sheet = wb.Sheets[sheetName];
         // Read as 2D array with blank rows preserved
         const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", blankrows: false }) as unknown[][];
-        if (!aoa.length) { sheetsSkipped.push({ name: sheetName, reason: "فاضي" }); continue; }
+        if (!aoa.length) { sheetsSkipped.push({ name: sheetName, reason: t.empty }); continue; }
 
         // Find header row: the row containing the largest number of recognized headers (min 2, must contain position_title)
         let bestRowIdx = -1, bestScore = 0, bestMap: Record<number, string> = {};
@@ -255,7 +382,7 @@ function AdminStructurePage() {
           if (hasPos && score > bestScore) { bestScore = score; bestRowIdx = i; bestMap = map; }
         }
         if (bestRowIdx < 0) {
-          sheetsSkipped.push({ name: sheetName, reason: "مافيش عمود اسم وظيفة" });
+          sheetsSkipped.push({ name: sheetName, reason: t.noJobTitleColumn });
           continue;
         }
 
@@ -272,7 +399,7 @@ function AdminStructurePage() {
 
       if (collected.length === 0) {
         const summary = sheetsSkipped.map(s => `«${s.name}» (${s.reason})`).join("، ");
-        toast.error(`مالقيتش وظائف. الشيتات: ${summary || sheetsScanned.join("، ")}`);
+        toast.error(`${t.noPositionsFound}: ${summary || sheetsScanned.join("، ")}`);
         return;
       }
 
@@ -296,21 +423,21 @@ function AdminStructurePage() {
       };
       if (importMode === "replace") {
         const del = await sb.from("positions").delete().eq("company_id", companyId);
-        if (del.error) { toast.error(`فشل حذف الموجود: ${errMsg(del.error)}`); return; }
+        if (del.error) { toast.error(`${t.failedDeleteExisting}: ${errMsg(del.error)}`); return; }
       }
 
       for (let i = 0; i < rowsForDb.length; i += 500) {
         const ins = await sb.from("positions").insert(rowsForDb.slice(i, i + 500));
         if (ins.error) {
-          toast.error(`فشل الإدخال عند الصف ${i}: ${errMsg(ins.error)}`);
+          toast.error(`${t.failedInsertAtRow} ${i}: ${errMsg(ins.error)}`);
           return;
         }
       }
-      toast.success(`تم ${importMode === "replace" ? "استبدال" : "إضافة"} ${rowsForDb.length} وظيفة من ${sheetsScanned.length - sheetsSkipped.length} شيت`);
+      toast.success(t.importedSummary(importMode, rowsForDb.length, sheetsScanned.length - sheetsSkipped.length));
       reload();
     } catch (err) {
       console.error(err);
-      toast.error("فشل قراءة الملف");
+      toast.error(t.failedReadFile);
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -318,27 +445,30 @@ function AdminStructurePage() {
   };
 
   return (
-    <div className="min-h-screen py-8" dir="rtl">
+    <div className="min-h-screen py-8" dir={dir}>
       <div className="container mx-auto px-4 max-w-6xl">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-4">
-          <ArrowRight className="w-4 h-4" /> الرئيسية
-        </Link>
-        <h1 className="text-3xl font-bold mb-2">إدارة الهيكل التنظيمي</h1>
-        <p className="text-muted-foreground mb-6">إنشاء شركات، رفع شيت Excel لتحديث الهيكل تلقائياً، أو إضافة/حذف وظائف يدوياً.</p>
+        <div className="flex items-center justify-between mb-4">
+          <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
+            <ArrowRight className="w-4 h-4" /> {t.home}
+          </Link>
+          <LanguageToggle />
+        </div>
+        <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
+        <p className="text-muted-foreground mb-6">{t.subtitle}</p>
 
         <Card className="p-5 mb-6">
-          <h2 className="font-bold mb-3 flex items-center gap-2"><Plus className="w-4 h-4" /> الشركات</h2>
+          <h2 className="font-bold mb-3 flex items-center gap-2"><Plus className="w-4 h-4" /> {t.companiesSection}</h2>
           <div className="flex flex-wrap items-end gap-3 mb-4">
             <div className="flex-1 min-w-[220px]">
-              <Label>اسم شركة جديدة</Label>
-              <Input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} placeholder="مثال: شركة X" />
+              <Label>{t.newCompanyName}</Label>
+              <Input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} placeholder={t.newCompanyNamePlaceholder} />
             </div>
             <div className="flex-1 min-w-[240px]">
-              <Label>رابط شعار الشركة (اختياري)</Label>
-              <Input value={newCompanyLogoUrl} onChange={(e) => setNewCompanyLogoUrl(e.target.value)} placeholder="https://... أو /__l5e/assets-v1/..." />
+              <Label>{t.logoUrlLabel}</Label>
+              <Input value={newCompanyLogoUrl} onChange={(e) => setNewCompanyLogoUrl(e.target.value)} placeholder={t.logoUrlPlaceholder} />
             </div>
             <Button onClick={createCompany} disabled={creatingCompany || !newCompanyName.trim()} className="gap-2">
-              {creatingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} إضافة شركة
+              {creatingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {t.addCompany}
             </Button>
           </div>
           <div className="space-y-2">
@@ -354,7 +484,7 @@ function AdminStructurePage() {
                 <span className="font-medium text-sm flex-1">{c.name}</span>
                 <Input
                   defaultValue={c.logo_url ?? ""}
-                  placeholder="رابط الشعار"
+                  placeholder={t.logoUrlInputPlaceholder}
                   className="max-w-xs h-8 text-xs"
                   onBlur={(e) => {
                     const v = e.target.value.trim();
@@ -362,57 +492,57 @@ function AdminStructurePage() {
                   }}
                   disabled={uploadingLogoFor === c.id}
                 />
-                <button onClick={() => deleteCompany(c.id)} className="text-destructive hover:text-destructive/80 p-1" title="حذف الشركة">
+                <button onClick={() => deleteCompany(c.id)} className="text-destructive hover:text-destructive/80 p-1" title={t.deleteCompanyTitle}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             ))}
-            {childCompanies.length === 0 && <span className="text-xs text-muted-foreground">مافيش شركات لسه.</span>}
+            {childCompanies.length === 0 && <span className="text-xs text-muted-foreground">{t.noCompaniesYet}</span>}
           </div>
         </Card>
 
         <Card className="p-5 mb-6">
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1.5 min-w-[220px] flex-1">
-              <Label>اختر الشركة</Label>
+              <Label>{t.selectCompany}</Label>
               <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger><SelectValue placeholder="كل الشركات" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t.allCompanies} /></SelectTrigger>
                 <SelectContent>
                   {childCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5 min-w-[160px]">
-              <Label>وضع الاستيراد</Label>
+              <Label>{t.importMode}</Label>
               <Select value={importMode} onValueChange={(v) => setImportMode(v as "replace" | "append")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="append">إضافة على الموجود</SelectItem>
-                  <SelectItem value="replace">استبدال الكل</SelectItem>
+                  <SelectItem value="append">{t.appendMode}</SelectItem>
+                  <SelectItem value="replace">{t.replaceMode}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleExcel} className="hidden" />
             <Button onClick={() => fileRef.current?.click()} disabled={busy || !companyId} className="gap-2">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              رفع شيت Excel
+              {t.uploadExcel}
             </Button>
-            <Button variant="outline" onClick={downloadTemplate} className="gap-2"><Download className="w-4 h-4" /> تنزيل التمبلت</Button>
-            <Button variant="outline" onClick={downloadReport} className="gap-2"><FileSpreadsheet className="w-4 h-4" /> تنزيل تقرير الهيكل</Button>
-            <Button variant="outline" onClick={() => reload()} className="gap-2"><RefreshCw className="w-4 h-4" /> تحديث</Button>
+            <Button variant="outline" onClick={downloadTemplate} className="gap-2"><Download className="w-4 h-4" /> {t.downloadTemplate}</Button>
+            <Button variant="outline" onClick={downloadReport} className="gap-2"><FileSpreadsheet className="w-4 h-4" /> {t.downloadStructureReport}</Button>
+            <Button variant="outline" onClick={() => reload()} className="gap-2"><RefreshCw className="w-4 h-4" /> {t.refresh}</Button>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            الأعمدة المتوقعة: Sector, Department, Section, Position (الإجباري), Manager, Job Code. يدعم العربية والإنجليزية. (Subsection اختياري لو موجود في الشيت هيتحفظ.)
+            {t.expectedColumns}
           </p>
         </Card>
 
         <Card className="p-5 mb-6">
-          <h2 className="font-bold mb-3 flex items-center gap-2"><Plus className="w-4 h-4" /> إضافة وظيفة يدوياً</h2>
+          <h2 className="font-bold mb-3 flex items-center gap-2"><Plus className="w-4 h-4" /> {t.addPositionManually}</h2>
           <div className="grid md:grid-cols-3 gap-3">
             <div>
-              <Label>الشركة *</Label>
+              <Label>{t.companyRequired}</Label>
               <Select value={newRow.company_id} onValueChange={(v) => setNewRow({ ...newRow, company_id: v })}>
-                <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t.choose} /></SelectTrigger>
                 <SelectContent>{childCompanies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -420,14 +550,14 @@ function AdminStructurePage() {
             <div><Label>Department</Label><Input value={newRow.department} onChange={(e) => setNewRow({ ...newRow, department: e.target.value })} /></div>
             <div><Label>Section</Label><Input value={newRow.section} onChange={(e) => setNewRow({ ...newRow, section: e.target.value })} /></div>
             <div><Label>Manager (Reports To)</Label><Input value={newRow.manager_position} onChange={(e) => setNewRow({ ...newRow, manager_position: e.target.value })} /></div>
-            <div className="md:col-span-2"><Label>Position Title *</Label><Input value={newRow.position_title} onChange={(e) => setNewRow({ ...newRow, position_title: e.target.value })} /></div>
+            <div className="md:col-span-2"><Label>{t.positionTitleRequired}</Label><Input value={newRow.position_title} onChange={(e) => setNewRow({ ...newRow, position_title: e.target.value })} /></div>
             <div><Label>Job Code</Label><Input value={newRow.job_code} onChange={(e) => setNewRow({ ...newRow, job_code: e.target.value })} /></div>
           </div>
-          <div className="mt-3"><Button onClick={addPosition} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Plus className="w-4 h-4 ml-1.5" />} إضافة</Button></div>
+          <div className="mt-3"><Button onClick={addPosition} disabled={busy}>{busy ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Plus className="w-4 h-4 ml-1.5" />} {t.add}</Button></div>
         </Card>
 
         <Card className="overflow-hidden">
-          <div className="p-4 border-b font-semibold">الوظائف ({filtered.length})</div>
+          <div className="p-4 border-b font-semibold">{t.positionsSection(filtered.length)}</div>
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted sticky top-0">

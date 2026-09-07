@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useLang, useT } from "@/hooks/use-i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,10 +22,10 @@ import {
 export const Route = createFileRoute("/training/needs")({
   head: () => ({
     meta: [
-      { title: "الاحتياجات التدريبية (TN) · نهضة مصر" },
-      { name: "description", content: "تسجيل الاحتياجات التدريبية للموظفين ورفعها لفريق التطوير التنظيمي." },
-      { property: "og:title", content: "الاحتياجات التدريبية (TN) · نهضة مصر" },
-      { property: "og:description", content: "تسجيل الاحتياجات التدريبية للموظفين ورفعها لفريق التطوير التنظيمي." },
+      { title: "Training Needs (TN) · Nahdet Misr" },
+      { name: "description", content: "Register employee training needs and submit them to the Organizational Development team." },
+      { property: "og:title", content: "Training Needs (TN) · Nahdet Misr" },
+      { property: "og:description", content: "Register employee training needs and submit them to the Organizational Development team." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -40,7 +42,96 @@ const EMPTY: Draft = {
   recommended_quarter_1: "", recommended_quarter_2: "", provider_recommendation: "", notes: "",
 };
 
+const dict = {
+  en: {
+    title: "Training Needs (TN)",
+    home: "Home",
+    registerTitle: "Register a Training Need",
+    downloadTemplate: "Download Template",
+    uploadSheet: "Upload Sheet",
+    company: "Company",
+    sector: "Sector",
+    department: "Department",
+    position: "Position",
+    select: "— Select —",
+    general: "(General)",
+    employeeCode: "Employee Code",
+    employeeName: "Employee Name",
+    trainingTopic: "Required Training Topic *",
+    expectedKpi: "Expected KPI After Training",
+    trainingType: "Training Type",
+    priority: "Implementation Priority",
+    quarter1: "Suggested Timing 1",
+    quarter2: "Suggested Timing 2",
+    objective: "Training Objective",
+    provider: "Suggested Training Providers",
+    notes: "Notes",
+    save: "Save Need",
+    registeredTitle: "Registered Needs",
+    noRecords: "No needs registered yet.",
+    colEmployee: "Employee",
+    colPosition: "Position",
+    colDepartment: "Department",
+    colTopic: "Training Topic",
+    colPriority: "Priority",
+    colStatus: "Status",
+    topicRequired: "Training topic is required",
+    saveFailed: "Save failed: ",
+    saveSuccess: "Training need registered",
+    deleteFailed: "Cannot delete after approval",
+    deleteSuccess: "Deleted successfully",
+    noValidRows: "No valid rows — check the training topic column",
+    uploadFailedAt: "Upload failed at record ",
+    uploadSuccess: "needs uploaded",
+    invalidFile: "Invalid file",
+  },
+  ar: {
+    title: "الاحتياجات التدريبية (TN)",
+    home: "الرئيسية",
+    registerTitle: "تسجيل احتياج تدريبي",
+    downloadTemplate: "تنزيل التمبلت",
+    uploadSheet: "رفع شيت",
+    company: "الشركة",
+    sector: "القطاع (Sector)",
+    department: "الإدارة (Department)",
+    position: "المسمى الوظيفي (Position)",
+    select: "— اختر —",
+    general: "(عام)",
+    employeeCode: "كود الموظف",
+    employeeName: "اسم الموظف",
+    trainingTopic: "الموضوع التدريبي المطلوب *",
+    expectedKpi: "مؤشر الأداء بعد التدريب",
+    trainingType: "نوع التدريب",
+    priority: "أولوية التنفيذ",
+    quarter1: "التوقيت المقترح 1",
+    quarter2: "التوقيت المقترح 2",
+    objective: "هدف التدريب",
+    provider: "شركات تدريب مقترحة",
+    notes: "ملاحظات",
+    save: "حفظ الاحتياج",
+    registeredTitle: "الاحتياجات المسجلة",
+    noRecords: "لا توجد احتياجات مسجلة بعد.",
+    colEmployee: "الموظف",
+    colPosition: "المسمى",
+    colDepartment: "الإدارة",
+    colTopic: "الموضوع التدريبي",
+    colPriority: "الأولوية",
+    colStatus: "الحالة",
+    topicRequired: "الموضوع التدريبي مطلوب",
+    saveFailed: "فشل الحفظ: ",
+    saveSuccess: "تم تسجيل الاحتياج التدريبي",
+    deleteFailed: "لا يمكن الحذف بعد الاعتماد",
+    deleteSuccess: "تم الحذف",
+    noValidRows: "مفيش صفوف صالحة — تأكد من عمود الموضوع التدريبي",
+    uploadFailedAt: "فشل الرفع عند السجل ",
+    uploadSuccess: "تم رفع",
+    invalidFile: "ملف غير صالح",
+  },
+};
+
 function NeedsPage() {
+  const { dir } = useLang();
+  const t = useT(dict);
   const auth = useAuth();
   const { companies, positions, loading: structLoading } = useStructure();
   const [rows, setRows] = useState<TrainingNeed[]>([]);
@@ -81,7 +172,7 @@ function NeedsPage() {
   const set = (k: keyof Draft, v: string) => setD(prev => ({ ...prev, [k]: v }));
 
   const submit = async () => {
-    if (!d.training_topic?.trim()) { toast.error("الموضوع التدريبي مطلوب"); return; }
+    if (!d.training_topic?.trim()) { toast.error(t.topicRequired); return; }
     setSaving(true);
     const payload = {
       created_by: auth.user!.id,
@@ -103,16 +194,16 @@ function NeedsPage() {
     };
     const { error } = await supabase.from("training_needs").insert(payload);
     setSaving(false);
-    if (error) { toast.error("فشل الحفظ: " + error.message); return; }
-    toast.success("تم تسجيل الاحتياج التدريبي");
+    if (error) { toast.error(t.saveFailed + error.message); return; }
+    toast.success(t.saveSuccess);
     setD({ ...EMPTY, company_id: d.company_id, sector: d.sector, department: d.department });
     load();
   };
 
   const remove = async (id: string) => {
     const { error } = await supabase.from("training_needs").delete().eq("id", id);
-    if (error) { toast.error("لا يمكن الحذف بعد الاعتماد"); return; }
-    toast.success("تم الحذف");
+    if (error) { toast.error(t.deleteFailed); return; }
+    toast.success(t.deleteSuccess);
     load();
   };
 
@@ -130,7 +221,7 @@ function NeedsPage() {
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
       const mapped = json.map(mapSheetRow).filter(r => r.training_topic && String(r.training_topic).trim());
-      if (!mapped.length) { toast.error("مفيش صفوف صالحة — تأكد من عمود الموضوع التدريبي"); return; }
+      if (!mapped.length) { toast.error(t.noValidRows); return; }
       const payload = mapped.map(r => ({
         ...r,
         training_topic: String(r.training_topic),
@@ -140,113 +231,116 @@ function NeedsPage() {
       const CHUNK = 500;
       for (let i = 0; i < payload.length; i += CHUNK) {
         const { error } = await supabase.from("training_needs").insert(payload.slice(i, i + CHUNK) as never);
-        if (error) { toast.error(`فشل الرفع عند السجل ${i + 1}: ` + error.message); return; }
+        if (error) { toast.error(`${t.uploadFailedAt}${i + 1}: ` + error.message); return; }
       }
-      toast.success(`تم رفع ${payload.length} احتياج تدريبي`);
+      toast.success(`${t.uploadSuccess} ${payload.length}`);
       load();
     } catch (e) {
-      toast.error("ملف غير صالح");
+      toast.error(t.invalidFile);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-background" dir={dir}>
       <header className="bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="font-bold">الاحتياجات التدريبية (TN)</div>
-          <Link to="/"><Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/15"><ArrowRight className="w-4 h-4 ml-1" /> الرئيسية</Button></Link>
+          <div className="font-bold">{t.title}</div>
+          <div className="flex items-center gap-2">
+            <LanguageToggle className="text-primary-foreground hover:bg-white/15" />
+            <Link to="/"><Button size="sm" variant="ghost" className="text-primary-foreground hover:bg-white/15"><ArrowRight className="w-4 h-4 ml-1" /> {t.home}</Button></Link>
+          </div>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-8 space-y-8">
         <Card className="p-6 space-y-5">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <h2 className="text-xl font-bold">تسجيل احتياج تدريبي</h2>
+            <h2 className="text-xl font-bold">{t.registerTitle}</h2>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="w-4 h-4 ml-1" /> تنزيل التمبلت</Button>
+              <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="w-4 h-4 ml-1" /> {t.downloadTemplate}</Button>
               <label>
                 <input type="file" accept=".xlsx,.xls" className="hidden"
                   onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); e.currentTarget.value = ""; }} />
-                <Button variant="outline" size="sm" asChild><span><Upload className="w-4 h-4 ml-1" /> رفع شيت</span></Button>
+                <Button variant="outline" size="sm" asChild><span><Upload className="w-4 h-4 ml-1" /> {t.uploadSheet}</span></Button>
               </label>
             </div>
           </div>
 
           {structLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
             <div className="grid md:grid-cols-3 gap-4">
-              <Field label="الشركة">
+              <Field label={t.company}>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                   value={d.company_id ?? ""} onChange={e => setD(p => ({ ...p, company_id: e.target.value, sector: "", department: "", position_title: "" }))}>
-                  <option value="">— اختر —</option>
+                  <option value="">{t.select}</option>
                   {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </Field>
-              <Field label="القطاع (Sector)">
+              <Field label={t.sector}>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                   value={d.sector ?? ""} onChange={e => setD(p => ({ ...p, sector: e.target.value, department: "", position_title: "" }))}>
-                  <option value="">— اختر —</option>
-                  {sectors.map(s => <option key={s} value={s}>{s === NA_KEY ? "(عام)" : s}</option>)}
+                  <option value="">{t.select}</option>
+                  {sectors.map(s => <option key={s} value={s}>{s === NA_KEY ? t.general : s}</option>)}
                 </select>
               </Field>
-              <Field label="الإدارة (Department)">
+              <Field label={t.department}>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                   value={d.department ?? ""} onChange={e => setD(p => ({ ...p, department: e.target.value, position_title: "" }))}>
-                  <option value="">— اختر —</option>
-                  {departments.map(s => <option key={s} value={s}>{s === NA_KEY ? "(عام)" : s}</option>)}
+                  <option value="">{t.select}</option>
+                  {departments.map(s => <option key={s} value={s}>{s === NA_KEY ? t.general : s}</option>)}
                 </select>
               </Field>
-              <Field label="المسمى الوظيفي (Position)">
+              <Field label={t.position}>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                   value={d.position_title ?? ""} onChange={e => set("position_title", e.target.value)}>
-                  <option value="">— اختر —</option>
+                  <option value="">{t.select}</option>
                   {positionOptions.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </Field>
-              <Field label="كود الموظف"><Input value={d.employee_code ?? ""} onChange={e => set("employee_code", e.target.value)} /></Field>
-              <Field label="اسم الموظف"><Input value={d.employee_name ?? ""} onChange={e => set("employee_name", e.target.value)} /></Field>
-              <Field label="الموضوع التدريبي المطلوب *"><Input value={d.training_topic ?? ""} onChange={e => set("training_topic", e.target.value)} /></Field>
-              <Field label="مؤشر الأداء بعد التدريب"><Input value={d.expected_kpi ?? ""} onChange={e => set("expected_kpi", e.target.value)} /></Field>
-              <Field label="نوع التدريب">
+              <Field label={t.employeeCode}><Input value={d.employee_code ?? ""} onChange={e => set("employee_code", e.target.value)} /></Field>
+              <Field label={t.employeeName}><Input value={d.employee_name ?? ""} onChange={e => set("employee_name", e.target.value)} /></Field>
+              <Field label={t.trainingTopic}><Input value={d.training_topic ?? ""} onChange={e => set("training_topic", e.target.value)} /></Field>
+              <Field label={t.expectedKpi}><Input value={d.expected_kpi ?? ""} onChange={e => set("expected_kpi", e.target.value)} /></Field>
+              <Field label={t.trainingType}>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={d.training_type ?? ""} onChange={e => set("training_type", e.target.value)}>
-                  <option value="">— اختر —</option>{TRAINING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  <option value="">{t.select}</option>{TRAINING_TYPES.map(x => <option key={x} value={x}>{x}</option>)}
                 </select>
               </Field>
-              <Field label="أولوية التنفيذ">
+              <Field label={t.priority}>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={d.training_priority ?? ""} onChange={e => set("training_priority", e.target.value)}>
-                  <option value="">— اختر —</option>{PRIORITIES.map(t => <option key={t} value={t}>{t}</option>)}
+                  <option value="">{t.select}</option>{PRIORITIES.map(x => <option key={x} value={x}>{x}</option>)}
                 </select>
               </Field>
-              <Field label="التوقيت المقترح 1">
+              <Field label={t.quarter1}>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={d.recommended_quarter_1 ?? ""} onChange={e => set("recommended_quarter_1", e.target.value)}>
-                  <option value="">— اختر —</option>{QUARTERS.map(t => <option key={t} value={t}>{t}</option>)}
+                  <option value="">{t.select}</option>{QUARTERS.map(x => <option key={x} value={x}>{x}</option>)}
                 </select>
               </Field>
-              <Field label="التوقيت المقترح 2">
+              <Field label={t.quarter2}>
                 <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm" value={d.recommended_quarter_2 ?? ""} onChange={e => set("recommended_quarter_2", e.target.value)}>
-                  <option value="">— اختر —</option>{QUARTERS.map(t => <option key={t} value={t}>{t}</option>)}
+                  <option value="">{t.select}</option>{QUARTERS.map(x => <option key={x} value={x}>{x}</option>)}
                 </select>
               </Field>
-              <Field label="هدف التدريب" full><Textarea rows={2} value={d.training_objective ?? ""} onChange={e => set("training_objective", e.target.value)} /></Field>
-              <Field label="شركات تدريب مقترحة"><Input value={d.provider_recommendation ?? ""} onChange={e => set("provider_recommendation", e.target.value)} /></Field>
-              <Field label="ملاحظات" full><Textarea rows={2} value={d.notes ?? ""} onChange={e => set("notes", e.target.value)} /></Field>
+              <Field label={t.objective} full><Textarea rows={2} value={d.training_objective ?? ""} onChange={e => set("training_objective", e.target.value)} /></Field>
+              <Field label={t.provider}><Input value={d.provider_recommendation ?? ""} onChange={e => set("provider_recommendation", e.target.value)} /></Field>
+              <Field label={t.notes} full><Textarea rows={2} value={d.notes ?? ""} onChange={e => set("notes", e.target.value)} /></Field>
             </div>
           )}
 
           <Button onClick={submit} disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Plus className="w-4 h-4 ml-1" />} حفظ الاحتياج
+            {saving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Plus className="w-4 h-4 ml-1" />} {t.save}
           </Button>
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-xl font-bold mb-4">الاحتياجات المسجلة ({rows.length})</h2>
+          <h2 className="text-xl font-bold mb-4">{t.registeredTitle} ({rows.length})</h2>
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : rows.length === 0 ? (
-            <p className="text-muted-foreground">لا توجد احتياجات مسجلة بعد.</p>
+            <p className="text-muted-foreground">{t.noRecords}</p>
           ) : (
             <div className="overflow-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    {["الموظف", "المسمى", "الإدارة", "الموضوع التدريبي", "الأولوية", "الحالة", ""].map(h => (
+                    {[t.colEmployee, t.colPosition, t.colDepartment, t.colTopic, t.colPriority, t.colStatus, ""].map(h => (
                       <th key={h} className="p-2 text-right font-semibold whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
