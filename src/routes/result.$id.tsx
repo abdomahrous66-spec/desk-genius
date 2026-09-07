@@ -299,12 +299,12 @@ function ResultPage() {
 
   if (!record) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4" dir={dir}>
         <Card className="p-8 text-center max-w-md">
           <AlertCircle className="w-12 h-12 mx-auto text-destructive mb-3" />
-          <h2 className="text-xl font-bold mb-2">لم يتم العثور على الطلب</h2>
+          <h2 className="text-xl font-bold mb-2">{t.notFound}</h2>
           <Link to="/">
-            <Button>الرجوع للرئيسية</Button>
+            <Button>{t.backHome}</Button>
           </Link>
         </Card>
       </div>
@@ -315,16 +315,19 @@ function ResultPage() {
   const isError = record.status === "error";
 
   return (
-    <div className="min-h-screen py-8 md:py-12">
+    <div className="min-h-screen py-8 md:py-12" dir={dir}>
       <div className="container mx-auto px-4 max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between gap-3">
           <Link to="/" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">
             <ArrowRight className="w-4 h-4" />
-            الرئيسية
+            {t.home}
           </Link>
-          <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary">
-            كل الطلبات
-          </Link>
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary">
+              {t.allRequests}
+            </Link>
+          </div>
         </div>
 
         <Card className="bg-gradient-card p-6 md:p-8 shadow-elevated mb-6">
@@ -332,8 +335,8 @@ function ResultPage() {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold mb-1">{record.job_title}</h1>
               <div className="text-sm text-muted-foreground space-y-0.5">
-                {record.department && <p>القسم: {record.department}</p>}
-                {record.manager_name && <p>المدير: {record.manager_name}</p>}
+                {record.department && <p>{t.department}: {record.department}</p>}
+                {record.manager_name && <p>{t.manager}: {record.manager_name}</p>}
               </div>
             </div>
             <StatusBadge status={record.status} />
@@ -345,8 +348,8 @@ function ResultPage() {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-8 h-8 text-primary animate-pulse" />
             </div>
-            <h2 className="text-xl font-bold mb-2">الذكاء الاصطناعي بيحلل البيانات...</h2>
-            <p className="text-muted-foreground mb-6">عادة بياخد من 10 لـ 30 ثانية. الصفحة هتتحدث تلقائياً.</p>
+            <h2 className="text-xl font-bold mb-2">{t.analyzing}</h2>
+            <p className="text-muted-foreground mb-6">{t.analyzingHint}</p>
             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
           </Card>
         )}
@@ -356,8 +359,8 @@ function ResultPage() {
             <div className="flex items-start gap-3">
               <AlertCircle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-bold text-destructive mb-1">حصلت مشكلة في التحليل</h3>
-                <p className="text-sm text-muted-foreground">{record.analysis_result || "حاول تاني بعد شوية"}</p>
+                <h3 className="font-bold text-destructive mb-1">{t.analysisError}</h3>
+                <p className="text-sm text-muted-foreground">{record.analysis_result || t.tryAgainLater}</p>
               </div>
             </div>
           </Card>
@@ -370,47 +373,47 @@ function ResultPage() {
                 <>
                   <Button onClick={copy} variant="outline" size="sm">
                     <Copy className="w-4 h-4 ml-1.5" />
-                    نسخ التحليل
+                    {t.copyAnalysis}
                   </Button>
                   <Button onClick={download} variant="outline" size="sm">
                     <Download className="w-4 h-4 ml-1.5" />
-                    تحميل التحليل (MD)
+                    {t.downloadAnalysisMd}
                   </Button>
                   <Button onClick={startEditAnalysis} variant="outline" size="sm">
                     <Pencil className="w-4 h-4 ml-1.5" />
-                    تعديل التحليل
+                    {t.editAnalysis}
                   </Button>
                   <Button onClick={startEdit} variant="outline" size="sm" disabled={!record.jd_data}>
                     <Pencil className="w-4 h-4 ml-1.5" />
-                    تعديل الـ JD
+                    {t.editJD}
                   </Button>
                   <Button onClick={() => downloadJD("ar")} size="sm" className="bg-primary text-primary-foreground" disabled={!record.jd_data || downloadingLang !== null}>
                     {downloadingLang === "ar" ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Languages className="w-4 h-4 ml-1.5" />}
-                    تحميل JD (عربي)
+                    {t.downloadJDAr}
                   </Button>
                   <Button onClick={() => downloadJD("en")} size="sm" variant="secondary" disabled={!record.jd_data || downloadingLang !== null}>
                     {downloadingLang === "en" ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <FileText className="w-4 h-4 ml-1.5" />}
-                    Download JD (English)
+                    {t.downloadJDEn}
                   </Button>
                 </>
               ) : editingAnalysis ? (
                 <>
                   <Button onClick={cancelEditAnalysis} variant="outline" size="sm" disabled={savingAnalysis}>
-                    <X className="w-4 h-4 ml-1.5" /> إلغاء
+                    <X className="w-4 h-4 ml-1.5" /> {t.cancel}
                   </Button>
                   <Button onClick={saveEditAnalysis} size="sm" className="bg-primary text-primary-foreground" disabled={savingAnalysis}>
                     {savingAnalysis ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Save className="w-4 h-4 ml-1.5" />}
-                    حفظ التحليل
+                    {t.saveAnalysis}
                   </Button>
                 </>
               ) : (
                 <>
                   <Button onClick={cancelEdit} variant="outline" size="sm" disabled={saving}>
-                    <X className="w-4 h-4 ml-1.5" /> إلغاء
+                    <X className="w-4 h-4 ml-1.5" /> {t.cancel}
                   </Button>
                   <Button onClick={saveEdit} size="sm" className="bg-primary text-primary-foreground" disabled={saving}>
                     {saving ? <Loader2 className="w-4 h-4 ml-1.5 animate-spin" /> : <Save className="w-4 h-4 ml-1.5" />}
-                    حفظ التعديلات
+                    {t.saveChanges}
                   </Button>
                 </>
               )}
@@ -420,7 +423,7 @@ function ResultPage() {
               <JDEditor jd={editJD} onChange={setEditJD} />
             ) : editingAnalysis ? (
               <Card className="bg-card p-4 md:p-6 shadow-elevated">
-                <p className="text-sm text-muted-foreground mb-3">عدّل النص (Markdown) — استخدم # للعناوين و - للقوائم.</p>
+                <p className="text-sm text-muted-foreground mb-3">{t.editHint}</p>
                 <Textarea
                   value={editAnalysis}
                   onChange={(e) => setEditAnalysis(e.target.value)}
