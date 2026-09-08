@@ -57,6 +57,26 @@ Deno.serve(async (req) => {
       { onConflict: "user_id,role", ignoreDuplicates: true }
     );
 
+    // Delegated super admins: bind the new user to the creator's companies so both
+    // sides stay inside the same scope (view-only until permissions are granted).
+    if (!iAmOwner) {
+      const { data: myScopes } = await admin
+        .from("user_scopes").select("company_id").eq("user_id", userData.user.id);
+      const companies = Array.from(
+        new Set((myScopes ?? []).map(s => s.company_id).filter(Boolean)),
+      );
+      if (companies.length > 0) {
+        await admin.from("user_scopes").insert(
+          companies.map(company_id => ({
+            user_id: created.user!.id,
+            company_id,
+            sector: null,
+            department: null,
+          })),
+        );
+      }
+    }
+
     return json({ ok: true, user_id: created.user!.id });
   } catch (e) {
     console.error("admin-create-user error:", e);
