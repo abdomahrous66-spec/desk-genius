@@ -87,8 +87,10 @@ export function useAuth(): AuthState {
         const isAdmin = canViewJD;
         const canManageUsers = isOwner || hasSuper;
         const canManageStructure = canManageUsers;
-        const canViewTP = unrestricted || (scoped && (anyFlag("can_view_tp") || anyFlag("can_admin_tp")));
-        const canTraining = unrestricted || (scoped && (anyFlag("can_create_tn") || anyFlag("can_admin_tp")));
+        // Every super admin can always open and register training needs.
+        const canViewTP = unrestricted || isSuperAdmin || (scoped && (anyFlag("can_view_tp") || anyFlag("can_admin_tp")));
+        const canTraining = unrestricted || isSuperAdmin || roles.includes("training")
+          || (scoped && (anyFlag("can_create_tn") || anyFlag("can_admin_tp")));
         const canAdminJD = unrestricted || (scoped && anyFlag("can_admin_jd"));
         const canAdminTP = unrestricted || (scoped && anyFlag("can_admin_tp"));
         const canDelete = isOwner || roles.includes("deleter") || anyFlag("can_delete");
