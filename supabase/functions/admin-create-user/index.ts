@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
           companies.map(company_id => ({
             user_id: created.user!.id,
             company_id,
-            sector: "*",
+            sector: null,
             department: null,
           })),
         );
