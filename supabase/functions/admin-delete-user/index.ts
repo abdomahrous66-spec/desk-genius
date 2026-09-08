@@ -39,6 +39,21 @@ Deno.serve(async (req) => {
     if (targetIsOwner) return json({ error: "Owner can't be deleted" }, 403);
     if (targetIsSuper && !iAmOwner) return json({ error: "Only Owner can delete a Super Admin" }, 403);
 
+    // Delegated super admins may only delete users inside a company they are scoped to.
+    if (!iAmOwner) {
+      const [{ data: myScopes }, { data: targetScopes }] = await Promise.all([
+        admin.from("user_scopes").select("company_id").eq("user_id", userData.user.id),
+        admin.from("user_scopes").select("company_id").eq("user_id", target_user_id),
+      ]);
+      const mine = new Set((myScopes ?? []).map(s => s.company_id).filter(Boolean));
+      const theirs = (targetScopes ?? []).map(s => s.company_id).filter(Boolean);
+      const unscopedSuper = mine.size === 0; // super admin with no scope restriction
+      const shares = theirs.some(c => mine.has(c));
+      if (!unscopedSuper && !shares) {
+        return json({ error: "Forbidden: user is outside your allowed scope" }, 403);
+      }
+    }
+
     const { error } = await admin.auth.admin.deleteUser(target_user_id);
     if (error) throw error;
     return json({ ok: true });
