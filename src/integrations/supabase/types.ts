@@ -14,6 +14,311 @@ export type Database = {
   }
   public: {
     Tables: {
+      appraisal_cycles: {
+        Row: {
+          company_id: string | null
+          competencies_weight: number
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          objectives_weight: number
+          penalties_weight: number
+          rating_bands: Json
+          status: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          company_id?: string | null
+          competencies_weight?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          objectives_weight?: number
+          penalties_weight?: number
+          rating_bands?: Json
+          status?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          company_id?: string | null
+          competencies_weight?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          objectives_weight?: number
+          penalties_weight?: number
+          rating_bands?: Json
+          status?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appraisal_cycles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appraisal_employees: {
+        Row: {
+          budget: Json | null
+          code: string
+          company_id: string | null
+          competencies: Json
+          competencies_weight: number | null
+          created_at: string
+          created_by: string | null
+          cycle_id: string
+          department: string | null
+          email: string | null
+          employee_status: string | null
+          hiring_date: string | null
+          id: string
+          location: string | null
+          manager_code: string | null
+          manager_name: string | null
+          managerial_level: string | null
+          name: string
+          objectives: Json
+          objectives_weight: number | null
+          parent_position_en: string | null
+          penalties_weight: number | null
+          phone: string | null
+          position_en: string | null
+          section: string | null
+          sector: string | null
+          subsection: string | null
+          total_weight: number | null
+          updated_at: string
+        }
+        Insert: {
+          budget?: Json | null
+          code: string
+          company_id?: string | null
+          competencies?: Json
+          competencies_weight?: number | null
+          created_at?: string
+          created_by?: string | null
+          cycle_id: string
+          department?: string | null
+          email?: string | null
+          employee_status?: string | null
+          hiring_date?: string | null
+          id?: string
+          location?: string | null
+          manager_code?: string | null
+          manager_name?: string | null
+          managerial_level?: string | null
+          name: string
+          objectives?: Json
+          objectives_weight?: number | null
+          parent_position_en?: string | null
+          penalties_weight?: number | null
+          phone?: string | null
+          position_en?: string | null
+          section?: string | null
+          sector?: string | null
+          subsection?: string | null
+          total_weight?: number | null
+          updated_at?: string
+        }
+        Update: {
+          budget?: Json | null
+          code?: string
+          company_id?: string | null
+          competencies?: Json
+          competencies_weight?: number | null
+          created_at?: string
+          created_by?: string | null
+          cycle_id?: string
+          department?: string | null
+          email?: string | null
+          employee_status?: string | null
+          hiring_date?: string | null
+          id?: string
+          location?: string | null
+          manager_code?: string | null
+          manager_name?: string | null
+          managerial_level?: string | null
+          name?: string
+          objectives?: Json
+          objectives_weight?: number | null
+          parent_position_en?: string | null
+          penalties_weight?: number | null
+          phone?: string | null
+          position_en?: string | null
+          section?: string | null
+          sector?: string | null
+          subsection?: string | null
+          total_weight?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appraisal_employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appraisal_employees_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "appraisal_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appraisal_evaluations: {
+        Row: {
+          approved_by: string | null
+          budget_score: number | null
+          comments: string | null
+          company_id: string | null
+          competencies_result: number | null
+          competency_scores: Json
+          created_at: string
+          created_by: string | null
+          cycle_id: string
+          department: string | null
+          employee_id: string
+          id: string
+          objective_scores: Json
+          objectives_result: number | null
+          outstanding: Json | null
+          overall_score: number | null
+          penalties_count: number
+          penalties_result: number | null
+          rating: string | null
+          sector: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          budget_score?: number | null
+          comments?: string | null
+          company_id?: string | null
+          competencies_result?: number | null
+          competency_scores?: Json
+          created_at?: string
+          created_by?: string | null
+          cycle_id: string
+          department?: string | null
+          employee_id: string
+          id?: string
+          objective_scores?: Json
+          objectives_result?: number | null
+          outstanding?: Json | null
+          overall_score?: number | null
+          penalties_count?: number
+          penalties_result?: number | null
+          rating?: string | null
+          sector?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          budget_score?: number | null
+          comments?: string | null
+          company_id?: string | null
+          competencies_result?: number | null
+          competency_scores?: Json
+          created_at?: string
+          created_by?: string | null
+          cycle_id?: string
+          department?: string | null
+          employee_id?: string
+          id?: string
+          objective_scores?: Json
+          objectives_result?: number | null
+          outstanding?: Json | null
+          overall_score?: number | null
+          penalties_count?: number
+          penalties_result?: number | null
+          rating?: string | null
+          sector?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appraisal_evaluations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appraisal_evaluations_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "appraisal_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appraisal_evaluations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "appraisal_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appraisal_penalties: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          cycle_id: string
+          employee_name: string | null
+          id: string
+          notes: string | null
+          penalties_count: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          cycle_id: string
+          employee_name?: string | null
+          id?: string
+          notes?: string | null
+          penalties_count?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          cycle_id?: string
+          employee_name?: string | null
+          id?: string
+          notes?: string | null
+          penalties_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appraisal_penalties_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "appraisal_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
