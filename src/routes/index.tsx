@@ -175,6 +175,9 @@ function Index() {
     trainingTiles.push({ to: "/training/plan", icon: CalendarCheck, title: t.trainingPlan, desc: t.trainingPlanDesc });
     trainingTiles.push({ to: "/training/dashboard", icon: BarChart3, title: t.trainingDashboard, desc: t.trainingDashboardDesc });
   }
+  if (auth.canViewTP || isOD) {
+    trainingTiles.push({ to: "/appraisal", icon: Sparkles, title: dir === "rtl" ? "تقييم الأداء" : "Performance Appraisal", desc: dir === "rtl" ? "فورم التقييم، الموظفين والأهداف والجدارات، وإعدادات التقييم." : "Evaluation form, employees with objectives & competencies, and appraisal settings." });
+  }
 
 
   return (
