@@ -15,10 +15,13 @@ import { Route as StructureRouteImport } from './routes/structure'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppraisalIndexRouteImport } from './routes/appraisal.index'
 import { Route as TrainingPlanRouteImport } from './routes/training.plan'
 import { Route as TrainingNeedsRouteImport } from './routes/training.needs'
 import { Route as TrainingDashboardRouteImport } from './routes/training.dashboard'
 import { Route as ResultIdRouteImport } from './routes/result.$id'
+import { Route as AppraisalSettingsRouteImport } from './routes/appraisal.settings'
+import { Route as AppraisalEmployeesRouteImport } from './routes/appraisal.employees'
 import { Route as AdminStructureRouteImport } from './routes/admin.structure'
 
 const UsersRoute = UsersRouteImport.update({
@@ -51,6 +54,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppraisalIndexRoute = AppraisalIndexRouteImport.update({
+  id: '/appraisal/',
+  path: '/appraisal/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrainingPlanRoute = TrainingPlanRouteImport.update({
   id: '/training/plan',
   path: '/training/plan',
@@ -71,6 +79,16 @@ const ResultIdRoute = ResultIdRouteImport.update({
   path: '/result/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppraisalSettingsRoute = AppraisalSettingsRouteImport.update({
+  id: '/appraisal/settings',
+  path: '/appraisal/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppraisalEmployeesRoute = AppraisalEmployeesRouteImport.update({
+  id: '/appraisal/employees',
+  path: '/appraisal/employees',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminStructureRoute = AdminStructureRouteImport.update({
   id: '/admin/structure',
   path: '/admin/structure',
@@ -85,10 +103,13 @@ export interface FileRoutesByFullPath {
   '/submit': typeof SubmitRoute
   '/users': typeof UsersRoute
   '/admin/structure': typeof AdminStructureRoute
+  '/appraisal/employees': typeof AppraisalEmployeesRoute
+  '/appraisal/settings': typeof AppraisalSettingsRoute
   '/result/$id': typeof ResultIdRoute
   '/training/dashboard': typeof TrainingDashboardRoute
   '/training/needs': typeof TrainingNeedsRoute
   '/training/plan': typeof TrainingPlanRoute
+  '/appraisal/': typeof AppraisalIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,10 +119,13 @@ export interface FileRoutesByTo {
   '/submit': typeof SubmitRoute
   '/users': typeof UsersRoute
   '/admin/structure': typeof AdminStructureRoute
+  '/appraisal/employees': typeof AppraisalEmployeesRoute
+  '/appraisal/settings': typeof AppraisalSettingsRoute
   '/result/$id': typeof ResultIdRoute
   '/training/dashboard': typeof TrainingDashboardRoute
   '/training/needs': typeof TrainingNeedsRoute
   '/training/plan': typeof TrainingPlanRoute
+  '/appraisal': typeof AppraisalIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,10 +136,13 @@ export interface FileRoutesById {
   '/submit': typeof SubmitRoute
   '/users': typeof UsersRoute
   '/admin/structure': typeof AdminStructureRoute
+  '/appraisal/employees': typeof AppraisalEmployeesRoute
+  '/appraisal/settings': typeof AppraisalSettingsRoute
   '/result/$id': typeof ResultIdRoute
   '/training/dashboard': typeof TrainingDashboardRoute
   '/training/needs': typeof TrainingNeedsRoute
   '/training/plan': typeof TrainingPlanRoute
+  '/appraisal/': typeof AppraisalIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,10 +154,13 @@ export interface FileRouteTypes {
     | '/submit'
     | '/users'
     | '/admin/structure'
+    | '/appraisal/employees'
+    | '/appraisal/settings'
     | '/result/$id'
     | '/training/dashboard'
     | '/training/needs'
     | '/training/plan'
+    | '/appraisal/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,10 +170,13 @@ export interface FileRouteTypes {
     | '/submit'
     | '/users'
     | '/admin/structure'
+    | '/appraisal/employees'
+    | '/appraisal/settings'
     | '/result/$id'
     | '/training/dashboard'
     | '/training/needs'
     | '/training/plan'
+    | '/appraisal'
   id:
     | '__root__'
     | '/'
@@ -153,10 +186,13 @@ export interface FileRouteTypes {
     | '/submit'
     | '/users'
     | '/admin/structure'
+    | '/appraisal/employees'
+    | '/appraisal/settings'
     | '/result/$id'
     | '/training/dashboard'
     | '/training/needs'
     | '/training/plan'
+    | '/appraisal/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,10 +203,13 @@ export interface RootRouteChildren {
   SubmitRoute: typeof SubmitRoute
   UsersRoute: typeof UsersRoute
   AdminStructureRoute: typeof AdminStructureRoute
+  AppraisalEmployeesRoute: typeof AppraisalEmployeesRoute
+  AppraisalSettingsRoute: typeof AppraisalSettingsRoute
   ResultIdRoute: typeof ResultIdRoute
   TrainingDashboardRoute: typeof TrainingDashboardRoute
   TrainingNeedsRoute: typeof TrainingNeedsRoute
   TrainingPlanRoute: typeof TrainingPlanRoute
+  AppraisalIndexRoute: typeof AppraisalIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -217,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/appraisal/': {
+      id: '/appraisal/'
+      path: '/appraisal'
+      fullPath: '/appraisal/'
+      preLoaderRoute: typeof AppraisalIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/training/plan': {
       id: '/training/plan'
       path: '/training/plan'
@@ -245,6 +291,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResultIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/appraisal/settings': {
+      id: '/appraisal/settings'
+      path: '/appraisal/settings'
+      fullPath: '/appraisal/settings'
+      preLoaderRoute: typeof AppraisalSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appraisal/employees': {
+      id: '/appraisal/employees'
+      path: '/appraisal/employees'
+      fullPath: '/appraisal/employees'
+      preLoaderRoute: typeof AppraisalEmployeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/structure': {
       id: '/admin/structure'
       path: '/admin/structure'
@@ -263,10 +323,13 @@ const rootRouteChildren: RootRouteChildren = {
   SubmitRoute: SubmitRoute,
   UsersRoute: UsersRoute,
   AdminStructureRoute: AdminStructureRoute,
+  AppraisalEmployeesRoute: AppraisalEmployeesRoute,
+  AppraisalSettingsRoute: AppraisalSettingsRoute,
   ResultIdRoute: ResultIdRoute,
   TrainingDashboardRoute: TrainingDashboardRoute,
   TrainingNeedsRoute: TrainingNeedsRoute,
   TrainingPlanRoute: TrainingPlanRoute,
+  AppraisalIndexRoute: AppraisalIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
