@@ -169,7 +169,15 @@ function UsersPage() {
     });
     setCreating(false);
     if (error || (data as { error?: string })?.error) {
-      toast.error((data as { error?: string })?.error || t.createFailed);
+      let msg = (data as { error?: string })?.error;
+      try {
+        const ctx = (error as { context?: Response } | null)?.context;
+        if (!msg && ctx && typeof ctx.json === "function") msg = (await ctx.json())?.error;
+      } catch { /* ignore */ }
+      if (msg && /weak|easy to guess|pwned/i.test(msg)) {
+        msg = lang === "ar" ? "كلمة المرور ضعيفة أو مشهورة، اختر كلمة مرور أقوى (حروف وأرقام ورموز)." : "Password is too weak or commonly used. Choose a stronger one (letters, numbers, symbols).";
+      }
+      toast.error(msg || t.createFailed);
       return;
     }
     toast.success(t.created);
