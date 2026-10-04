@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   FileText, Sparkles, Send, Clock, Users, LogOut, Loader2, Layers,
-  GraduationCap, ClipboardList, CalendarCheck, BarChart3, Building2,
+  GraduationCap, ClipboardList, CalendarCheck, BarChart3, Building2, Award, Settings,
 } from "lucide-react";
 import { useAuth, signOut } from "@/hooks/use-auth";
 import nahdetLogo from "@/assets/nahdet-misr-logo.jpg.asset.json";
@@ -175,8 +175,14 @@ function Index() {
     trainingTiles.push({ to: "/training/plan", icon: CalendarCheck, title: t.trainingPlan, desc: t.trainingPlanDesc });
     trainingTiles.push({ to: "/training/dashboard", icon: BarChart3, title: t.trainingDashboard, desc: t.trainingDashboardDesc });
   }
+  const ar = dir === "rtl";
+  const appraisalTiles: Tile[] = [];
   if (auth.canViewTP || isOD) {
-    trainingTiles.push({ to: "/appraisal", icon: Sparkles, title: dir === "rtl" ? "تقييم الأداء" : "Performance Appraisal", desc: dir === "rtl" ? "فورم التقييم، الموظفين والأهداف والجدارات، وإعدادات التقييم." : "Evaluation form, employees with objectives & competencies, and appraisal settings." });
+    appraisalTiles.push({ to: "/appraisal", icon: Award, title: ar ? "فورم التقييم" : "Evaluation Form", desc: ar ? "اكتب كود الموظف وقيّم الأهداف والجدارات مع البيل كيرف." : "Enter an employee code, rate objectives & competencies, see the bell curve." });
+    appraisalTiles.push({ to: "/appraisal/employees", icon: Users, title: ar ? "الموظفين والأهداف والجدارات" : "Employees, Objectives & Competencies", desc: ar ? "إدخال يدوي أو رفع تمبلت Excel." : "Manual entry or Excel template upload." });
+  }
+  if (auth.isSuperAdmin || auth.isOwner || auth.canAdminTP) {
+    appraisalTiles.push({ to: "/appraisal/settings", icon: Settings, title: ar ? "إعدادات التقييم" : "Appraisal Settings", desc: ar ? "الدورات، النسب، البيل كيرف والجزاءات (فريق OD)." : "Cycles, weights, bell curve and penalties (OD team)." });
   }
 
 
@@ -215,6 +221,7 @@ function Index() {
         <Section icon={FileText} title={t.sectionJdTitle} subtitle={t.sectionJdSubtitle} tiles={jdTiles} />
         <Section icon={Layers} title={t.sectionStructureTitle} subtitle={t.sectionStructureSubtitle} tiles={structureTiles} />
         <Section icon={GraduationCap} title={t.sectionTrainingTitle} subtitle={t.sectionTrainingSubtitle} tiles={trainingTiles} />
+        <Section icon={Award} title={ar ? "Appraisal · تقييم الأداء" : "Performance Appraisal"} subtitle={ar ? "فورم التقييم والموظفين والإعدادات" : "Evaluation form, employees and settings"} tiles={appraisalTiles} />
       </main>
 
       <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">

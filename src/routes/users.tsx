@@ -120,7 +120,7 @@ const scopesTable = () => (supabase as unknown as {
 
 function UsersPage() {
   const auth = useAuth();
-  const { dir } = useLang();
+  const { dir, lang } = useLang();
   const t = useT(DICT as unknown as { en: Record<string, string>; ar: Record<string, string> });
   const [rows, setRows] = useState<Manager[]>([]);
   const [scopes, setScopes] = useState<ScopeRow[]>([]);
