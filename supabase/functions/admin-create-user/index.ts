@@ -50,7 +50,14 @@ Deno.serve(async (req) => {
       email, password, email_confirm: true,
       user_metadata: { username, display_name: displayName },
     });
-    if (error) throw error;
+    if (error) {
+      // Validation problems (weak password, duplicate user) are user errors, not crashes.
+      const code = (error as { code?: string }).code ?? "";
+      const msg = code === "weak_password"
+        ? "Password is too weak or commonly used. Choose a stronger one (letters, numbers, symbols)."
+        : /already|exists|registered/i.test(error.message) ? "This username already exists." : error.message;
+      return json({ error: msg, code }, 200);
+    }
 
     await admin.from("user_roles").upsert(
       { user_id: created.user!.id, role: requestedRole },
